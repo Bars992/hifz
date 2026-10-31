@@ -131,6 +131,13 @@ input[type=text],input[type=number],input[type=date],select{width:100%;font:inhe
 .resetbox{margin-top:12px;border:1.5px solid var(--warn);background:var(--warn-soft);border-radius:14px;padding:12px 14px;font-size:.9rem}
 .resetbox p{margin:0 0 10px}
 .chip.danger{background:var(--warn);border-color:var(--warn);color:#fff}
+.levels{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.level{text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.level strong{font-size:1.02rem;font-weight:600}
+.level span{font-size:.78rem;color:var(--muted);line-height:1.4}
+.level[aria-pressed="true"]{border-color:var(--teal);background:var(--surface);box-shadow:0 0 0 1.5px var(--teal)}
+.level[aria-pressed="true"] strong{color:var(--teal)}
+.sect{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);margin:4px 0 16px;padding-top:16px;border-top:1px solid var(--line)}
 /* mushaf */
 .mbtn{margin-top:8px;border:1px solid currentColor;background:transparent;border-radius:999px;padding:5px 12px;font-size:.8rem;font-weight:500}
 .task.l .mbtn{color:var(--learn)} .task.r .mbtn{color:var(--rev)}
@@ -287,9 +294,9 @@ function stats(plan,val){
   return{lT,lD,lV,rT,rD,rV,late,pend,valid:Math.min(valid,TOTAL_AYA),base:isCourt(plan)?JUZ_AYA[29]:isAya(plan)?(plan.deja||0):(PAGE_H[plan.deja||0]||0)};
 }
 function rythmeTxt(p){
-  const q=(qteList(p).find(x=>x[0]===p.qte)||[0,isAya(p)?p.qte+" versets":pagesTxt(p.qte)+" p."])[1];
+  const niv=isCourt(p)?"Débutant · ":isAya(p)?"Avancé · ":"";const q=(qteList(p).find(x=>x[0]===p.qte)||[0,isAya(p)?p.qte+" versets":pagesTxt(p.qte)+" p."])[1];
   const jours=WEEK.filter(w=>p.joursApp.includes(w)).map(w=>DOW_SHORT[w]).join(", ");
-  return q+" · "+jours;
+  return niv+q+" · "+jours;
 }
 function ago(iso){
   if(!iso)return"jamais"; const d=new Date(iso), days=Math.floor((today0()-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
@@ -378,9 +385,13 @@ function formHTML(){
   const fin=finEstimee(f);
   const ok=f.nom.trim()&&f.joursApp.length;
   return `<section class="form">
-  ${S.plan||S.editStudent?"":`<p class="hint" style="margin-bottom:16px">Choisissez votre rythme : le calendrier vous dira chaque jour quoi apprendre et quoi réviser, .</p>`}
+  ${S.plan||S.editStudent?"":`<p class="hint" style="margin-bottom:16px">Choisissez votre rythme : le calendrier vous dira chaque jour quoi apprendre et quoi réviser.</p>`}
   <div class="field"><label for="nom">Prénom</label><input id="nom" type="text" data-in="nom" value="${esc(f.nom)}" autocomplete="given-name" placeholder="Votre prénom"></div>
-  <div class="field"><span class="lab">Type de programme</span><div class="chips">${chip("type","aya","Coran",!isCourt(f))}${chip("type","court","Petites sourates",isCourt(f))}</div><p class="hint" style="margin-top:8px">${isCourt(f)?"Al-Fatiha, puis le Hizb Sabbih à l’envers : An-Nas, Al-Falaq, Al-Ikhlas… jusqu’à Al-A’la. Chaque séance = des sourates entières.":"Apprentissage par page, demi-page ou hizb, à partir de la sourate de votre choix."}</p></div>
+  <div class="field"><span class="lab">Niveau de l’élève</span><div class="levels">
+  <button class="level" data-act="type" data-v="court" aria-pressed="${isCourt(f)}"><strong>Débutant</strong><span>Al-Fatiha et les petites sourates (Hizb Sabbih). Une ou plusieurs sourates entières à chaque séance.</span></button>
+  <button class="level" data-act="type" data-v="aya" aria-pressed="${!isCourt(f)}"><strong>Avancé</strong><span>Tout le Coran, par demi-page, page ou hizb, à partir de la sourate de votre choix.</span></button>
+  </div></div>
+  <h3 class="sect">Réglages du programme ${isCourt(f)?"débutant":"avancé"}</h3>
   ${isCourt(f)?courtStartHTML(f):isAya(f)?dejaAyaHTML(f):`<div class="field"><label for="deja">Pages déjà mémorisées</label><p class="hint">À partir du début du Coran. Laissez 0 si vous commencez.</p><input id="deja" type="number" min="0" max="604" step="0.5" data-in="deja" value="${f.deja/2}"></div>`}
   <div class="field"><span class="lab">Quantité à apprendre par séance</span>${isAya(f)?`<p class="hint">L’application calcule elle-même de quelle aya à quelle aya, d’après le mushaf de Médine.</p>`:""}<div class="chips">${qteList(f).map(([v,l])=>chip("qte",v,l,f.qte===v)).join("")}</div></div>
   <div class="field"><span class="lab">Jours d’apprentissage</span><div class="chips days">${WEEK.map(w=>chip("jour",w,DOW_SHORT[w],f.joursApp.includes(w))).join("")}</div></div>
