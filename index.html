@@ -127,6 +127,10 @@ input[type=text],input[type=number],input[type=date],select{width:100%;font:inhe
 .contact{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .cbtn{display:inline-flex;align-items:center;border-radius:999px;padding:8px 14px;font-size:.82rem;font-weight:500;text-decoration:none}
 .cbtn.wa{background:#1FA855;color:#fff} .cbtn.zm{background:#2D6BEF;color:#fff}
+.resetbtn{width:100%;margin-top:12px;border:1.5px solid var(--warn);background:transparent;color:var(--warn);border-radius:14px;padding:12px;font-weight:500}
+.resetbox{margin-top:12px;border:1.5px solid var(--warn);background:var(--warn-soft);border-radius:14px;padding:12px 14px;font-size:.9rem}
+.resetbox p{margin:0 0 10px}
+.chip.danger{background:var(--warn);border-color:var(--warn);color:#fff}
 /* mushaf */
 .mbtn{margin-top:8px;border:1px solid currentColor;background:transparent;border-radius:999px;padding:5px 12px;font-size:.8rem;font-weight:500}
 .task.l .mbtn{color:var(--learn)} .task.r .mbtn{color:var(--rev)}
@@ -271,8 +275,9 @@ function finEstimee(f){
   while(L<tot(f)&&i<30000){if(f.joursApp.includes(d.getDay())){L=isAya(f)?stepEnd(L,f.qte):L+f.qte;if(L>=tot(f))return d}d=addDays(d,1);i++}
   return L>=tot(f)?parseKey(f.debut):null;
 }
+function fv(plan,val){val=val||{};if(S.local||!plan||!plan.created)return val;const o={};for(const k in val){const x=val[k];if(x&&(x.at||0)>=plan.created)o[k]=x}return o}
 function stats(plan,val){
-  val=val||{};const t=today0(), map=build(plan,t), faits=plan.faits||{};
+  val=fv(plan,val);const t=today0(), map=build(plan,t), faits=plan.faits||{};
   let lT=0,lD=0,lV=0,rT=0,rD=0,rV=0,late=0,pend=0,valid=0;
   for(const[k,e] of map){
     const f=faits[k]||{}, v=val[k]||{}, past=k<key(t);
@@ -326,7 +331,7 @@ function progHTML(p,val){
   <div class="prog-meta"><span>${GH?"Apprentissage fait":"Apprentissage validé"} : <strong>${s.lV}/${s.lT}</strong></span><span>${GH?"Révision faite":"Révision validée"} : <strong>${s.rV}/${s.rT}</strong></span>${s.pend?`<span class="pend">À valider : <strong>${s.pend}</strong></span>`:""}${s.late?`<span class="late">En retard : <strong>${s.late} séance${s.late>1?"s":""}</strong></span>`:""}${fin?`<span>Fin prévue : <strong>${fmtDate(fin,{month:"long",year:"numeric"})}</strong></span>`:""}</div></section>`;
 }
 function calHTML(p,ro,val,teacher){
-  val=val||{};
+  val=fv(p,val);
   const m=S.month, first=new Date(m.getFullYear(),m.getMonth(),1), last=new Date(m.getFullYear(),m.getMonth()+1,0);
   const map=build(p,last), faits=p.faits||{}, tk=key(today0());
   let g=["L","M","M","J","V","S","D"].map(x=>`<div class="dow">${x}</div>`).join("");
@@ -382,9 +387,10 @@ function formHTML(){
   <div class="field"><span class="lab">Quantité à réviser par séance</span><p class="hint">La révision reprend ce qui a été appris depuis le début du programme, puis recommence.</p><div class="chips">${revList(f).map(([v,l])=>chip("revq",v,l,f.revQte===v)).join("")}</div></div>
   <div class="field"><span class="lab">Jours de révision</span><p class="hint">Choisissez les jours où vous révisez. Ils peuvent être les mêmes que les jours d’apprentissage ou différents.</p><div class="chips days">${WEEK.map(w=>chip("rjour",w,DOW_SHORT[w],f.joursRev.includes(w))).join("")}</div></div>
   <div class="field"><label for="debut">Date de début</label><input id="debut" type="date" data-in="debut" value="${f.debut}"></div>
-  <div class="estimate">${fin?`À ce rythme, vous terminerez le Coran vers <strong>${fmtDate(fin,{month:"long",year:"numeric"})}</strong>.`:"Choisissez au moins un jour d’apprentissage."}</div>
+  <div class="estimate">${fin?`À ce rythme, vous terminerez ${isCourt(f)?"les petites sourates":"le Coran"} vers <strong>${fmtDate(fin,{month:"long",year:"numeric"})}</strong>.`:"Choisissez au moins un jour d’apprentissage."}</div>
   ${!f.nom.trim()?`<p class="err">Indiquez votre prénom pour que l’enseignant vous reconnaisse.</p>`:""}
-  <button class="primary" data-act="saveform" ${ok?"":"disabled"}>${S.editStudent?"Enregistrer le rythme de l’élève":S.plan?"Enregistrer les changements":"Créer mon programme"}</button></section>`;
+  <button class="primary" data-act="saveform" ${ok?"":"disabled"}>${S.editStudent?"Enregistrer le rythme de l’élève":S.plan?"Enregistrer les changements":"Créer mon programme"}</button>
+  ${S.plan&&!S.editStudent?(S.confirmReset?`<div class="resetbox"><p><strong>Tout effacer ?</strong> Votre rythme et toutes les séances cochées seront supprimés. Vous repartirez de zéro.</p><div class="chips"><button class="chip danger" data-act="reset2">Oui, tout effacer</button><button class="chip" data-act="reset0">Annuler</button></div></div>`:`<button class="resetbtn" data-act="reset1">Réinitialiser tout mon programme</button>`):""}</section>`;
 }
 function courtStartHTML(f){
   const opts=SEQ.map((s,i)=>`<option value="${i}"${i===(f.deja||0)?" selected":""}>${s}. ${SURAH_FR[s-1]}</option>`).join("");
@@ -425,10 +431,10 @@ app.addEventListener("click",ev=>{
   const b=ev.target.closest("[data-act]"); if(!b)return;
   const act=b.dataset.act, v=b.dataset.v, f=S.form;
   switch(act){
-    case"tab":S.tab=v;S.viewing=null;S.editStudent=null;S.cfgDraft=null;if(v==="reglages")S.form=null;break;
+    case"tab":S.tab=v;S.confirmReset=false;S.viewing=null;S.editStudent=null;S.cfgDraft=null;if(v==="reglages")S.form=null;break;
     case"sel":S.sel=v;break;
     case"mushaf":openMushaf(v);return;
-    case"valider":{const sid=S.viewing;if(!sid||!S.db)return;const all={...(S.vals[sid]||{})};const cur={...(all[S.sel]||{})};cur[v]=!cur[v];all[S.sel]=cur;S.vals[sid]=all;render();
+    case"valider":{const sid=S.viewing;if(!sid||!S.db)return;const all={...(S.vals[sid]||{})};const cur={...(all[S.sel]||{})};cur[v]=!cur[v];cur.at=Date.now();all[S.sel]=cur;S.vals[sid]=all;render();
       writeChain=writeChain.then(()=>S.db.doc("validations/"+sid).set(all)).catch(()=>{S.note="La validation n’a pas pu être enregistrée. Réessayez.";render()});return}
     case"month":S.month=new Date(S.month.getFullYear(),S.month.getMonth()+Number(v),1);break;
     case"done":{const p=JSON.parse(JSON.stringify(S.plan));p.faits=p.faits||{};const cur=p.faits[S.sel]||{};cur[v]=!cur[v];p.faits[S.sel]=cur;p.maj=new Date().toISOString();save(p);return}
@@ -442,8 +448,13 @@ app.addEventListener("click",ev=>{
     case"cancelEdit":S.editStudent=null;S.form=null;break;
     case"savecfg":{if(!S.db)return;const d={whatsapp:(S.cfgDraft.whatsapp||"").trim(),zoom:(S.cfgDraft.zoom||"").trim()};if(d.zoom&&!/^https:\/\//.test(d.zoom)){S.note="Le lien Zoom doit commencer par https://";render();return}S.cfg=d;S.cfgSaved=true;S.note="";render();
       writeChain=writeChain.then(()=>S.db.doc("config/prof").set(d)).catch(()=>{S.note="Les réglages n’ont pas pu être enregistrés.";render()});return}
+    case"reset1":S.confirmReset=true;break;
+    case"reset0":S.confirmReset=false;break;
+    case"reset2":{S.confirmReset=false;S.plan=null;S.form=null;S.tab="cal";
+      if(S.local){try{localStorage.removeItem("hifz-plan")}catch(e){}render();return}
+      render();writeChain=writeChain.then(()=>S.db.doc("eleves/"+S.uid).delete()).catch(()=>{S.note="La réinitialisation a échoué. Réessayez.";render()});return}
     case"saveform":{if(S.editStudent){const sid=S.editStudent,old=S.students.find(x=>x.id===sid)||{};const pl={...f,nom:f.nom.trim(),maj:old.maj||null};delete pl.id;S.form=null;S.editStudent=null;S.students=S.students.map(x=>x.id===sid?{...pl,id:sid}:x);render();
-      writeChain=writeChain.then(()=>S.db.doc("eleves/"+sid).set(pl)).catch(()=>{S.note="Le rythme de l’élève n’a pas pu être enregistré.";render()});return}const p={...f,nom:f.nom.trim(),maj:new Date().toISOString()};S.form=null;S.tab="cal";S.sel=key(today0());save(p);return}
+      writeChain=writeChain.then(()=>S.db.doc("eleves/"+sid).set(pl)).catch(()=>{S.note="Le rythme de l’élève n’a pas pu être enregistré.";render()});return}const p={...f,nom:f.nom.trim(),maj:new Date().toISOString()};if(!S.plan&&!p.created)p.created=Date.now();S.form=null;S.tab="cal";S.sel=key(today0());save(p);return}
     case"view":S.viewing=v;S.month=new Date(today0().getFullYear(),today0().getMonth(),1);S.sel=key(today0());break;
     case"back":S.viewing=null;S.editStudent=null;S.form=null;break;
   }
