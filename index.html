@@ -159,7 +159,7 @@ input[type=text],input[type=number],input[type=date],select{width:100%;font:inhe
 /* ====== À MODIFIER PAR LE PROFESSEUR ======
    whatsapp : votre numéro au format international, sans + ni espaces (ex. 33612345678)
    zoom     : votre lien de réunion Zoom (commence par https://)          */
-const PROF={whatsapp:"",zoom:""};
+const PROF={whatsapp:"33658169571",zoom:"https://us05web.zoom.us/j/3521272785?pwd=anVuV2tsRzhOQzRieXA2ekN5K0Jydz09"};
 /* ========================================== */
 const GH=true;
 const TOTAL=1208; // demi-pages (604 pages, mushaf de Médine)
@@ -175,14 +175,21 @@ const QSTART="1:1,2:26,2:44,2:60,2:75,2:92,2:106,2:124,2:142,2:158,2:177,2:189,2
 const QTE_A=[["p1","½ page"],["p2","1 page"],["p4","2 pages"],["q1","¼ hizb"],["q2","½ hizb"],["q4","1 hizb"]];
 const REVQ_A=[["p2","1 page"],["p4","2 pages"],["q2","½ hizb"],["q4","1 hizb"],["q8","1 juz"],["q16","2 juz"]];
 function parseQ(x){return typeof x==="number"?{u:"v",n:x}:{u:x[0],n:Number(x.slice(1))}}
-function stepEnd(i,x){const{u,n}=parseQ(x);if(u==="v")return i+n;
+function stepEnd(i,x){const{u,n}=parseQ(x);if(u==="v"||u==="s")return i+n;
   if(u==="p"){let h=0;while(h<1207&&PAGE_H[h+1]<=i)h++;let k=n,e;do{e=h+k>=1208?TOTAL_AYA:PAGE_H[h+k];k++}while(e<=i&&h+k<=1208);return Math.max(e,i+1)}
   let q=0;while(q<239&&QSTART[q+1]<=i)q++;return q+n>=240?TOTAL_AYA:QSTART[q+n]}
 function hizbLabel(i){let q=0;while(q<239&&QSTART[q+1]<=i)q++;const h=Math.floor(q/4)+1,r=q%4;return "Hizb "+h+(r?", "+["","¼","½","¾"][r]:"")}
-const isAya=p=>p.mode==="aya";
-const tot=p=>isAya(p)?TOTAL_AYA:TOTAL;
-const qteList=p=>isAya(p)?QTE_A:QTE;
-const revList=p=>isAya(p)?REVQ_A:REVQ;
+const isCourt=p=>p.mode==="court";
+const isAya=p=>p.mode==="aya"||p.mode==="court";
+// Petites sourates : Al-Fatiha puis le Hizb Sabbih à l’envers (An-Nas → Al-A’la)
+const SEQ=[1];for(let s=114;s>=87;s--)SEQ.push(s);
+const QTE_C=[["s1","1 sourate"],["s2","2 sourates"],["s3","3 sourates"]];
+const REVQ_C=[["s3","3 sourates"],["s5","5 sourates"],["s10","10 sourates"],["s99","Toutes"]];
+const tot=p=>isCourt(p)?SEQ.length:isAya(p)?TOTAL_AYA:TOTAL;
+const qteList=p=>isCourt(p)?QTE_C:isAya(p)?QTE_A:QTE;
+const revList=p=>isCourt(p)?REVQ_C:isAya(p)?REVQ_A:REVQ;
+const ayLen=r=>Array.isArray(r[0])?r.reduce((s,q)=>s+q[1]-q[0],0):r[1]-r[0];
+const firstAy=r=>Array.isArray(r[0])?r[0][0]:r[0];
 function ayaPos(i){let s=0;while(s<113&&AYA_START[s+1]<=i)s++;return[s,i-AYA_START[s]+1]}
 function amountTxt(p,u){return isAya(p)?u.toLocaleString("fr-FR")+" versets sur 6 236":pagesTxt(u)+" pages sur 604"}
 const DOW_SHORT=["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
@@ -215,6 +222,10 @@ function surahHTML(a,b){
 // Début de chaque demi-page en ayat (mushaf KFGQPC V4, 604 pages), 1209 bornes
 const PAGE_H=[0,5,7,10,12,18,23,27,31,33,36,40,44,49,55,60,64,67,68,73,76,80,83,87,90,92,95,98,100,104,108,111,112,116,119,123,126,130,133,137,141,145,148,150,152,156,160,165,170,173,176,180,183,185,188,191,193,195,197,202,203,206,209,213,217,220,222,224,226,228,231,235,237,239,240,242,244,248,252,254,255,257,259,261,263,265,266,269,271,273,276,279,281,285,288,289,289,292,293,299,302,306,308,312,315,319,322,328,330,334,338,342,345,349,354,358,363,367,370,373,376,380,384,389,393,396,401,404,408,411,414,419,425,429,433,437,441,444,446,448,450,454,458,462,466,471,473,477,479,483,487,491,493,497,499,503,504,506,507,510,512,515,516,518,519,523,526,528,530,535,537,540,544,549,552,556,558,564,567,570,572,576,579,582,584,586,587,591,594,596,598,602,606,610,614,618,620,623,627,630,633,637,640,645,647,652,655,659,663,665,668,670,671,673,674,676,678,681,682,685,686,689,692,696,700,702,705,709,710,713,714,717,719,722,726,731,733,736,739,742,746,750,752,757,759,762,764,768,772,775,777,779,782,785,789,794,797,802,807,813,816,821,824,829,833,838,841,845,848,853,857,859,862,867,870,875,879,882,883,887,890,896,899,903,907,911,913,917,919,924,926,929,931,933,935,938,940,943,946,950,954,960,965,972,976,981,984,988,991,994,997,1002,1005,1008,1011,1016,1021,1024,1027,1031,1035,1039,1041,1045,1049,1054,1058,1066,1074,1080,1084,1088,1091,1095,1097,1100,1103,1107,1109,1111,1113,1115,1117,1121,1124,1128,1132,1138,1141,1146,1149,1155,1160,1165,1168,1172,1176,1181,1185,1189,1193,1196,1200,1202,1205,1208,1212,1217,1221,1225,1229,1232,1235,1238,1241,1245,1248,1252,1255,1259,1261,1264,1266,1269,1271,1274,1275,1279,1282,1286,1289,1294,1296,1300,1303,1305,1307,1310,1314,1318,1321,1325,1328,1332,1334,1338,1341,1344,1346,1349,1352,1355,1357,1361,1364,1367,1370,1375,1378,1381,1384,1387,1389,1393,1397,1401,1406,1411,1417,1422,1425,1430,1434,1438,1442,1448,1452,1456,1461,1466,1470,1474,1478,1481,1485,1489,1492,1498,1501,1506,1510,1515,1518,1522,1526,1531,1535,1540,1544,1550,1554,1558,1561,1565,1570,1575,1581,1586,1590,1596,1600,1605,1610,1615,1618,1621,1626,1630,1633,1636,1639,1644,1648,1654,1659,1662,1665,1671,1674,1678,1682,1686,1691,1696,1699,1704,1707,1710,1712,1717,1720,1723,1725,1730,1735,1738,1741,1745,1749,1752,1755,1759,1760,1764,1768,1771,1774,1779,1783,1787,1792,1796,1802,1809,1817,1824,1833,1843,1853,1862,1872,1884,1892,1902,1907,1912,1915,1923,1927,1931,1935,1938,1943,1949,1955,1961,1965,1970,1973,1977,1980,1984,1988,1991,1994,1999,2003,2007,2011,2015,2019,2025,2029,2033,2036,2041,2046,2051,2056,2062,2067,2073,2078,2083,2087,2091,2095,2099,2104,2109,2115,2120,2125,2129,2133,2139,2144,2150,2155,2158,2160,2163,2167,2170,2174,2180,2185,2189,2193,2197,2201,2207,2214,2219,2223,2230,2237,2244,2250,2257,2261,2269,2275,2281,2288,2295,2301,2308,2314,2321,2326,2335,2345,2351,2360,2369,2385,2390,2399,2405,2412,2419,2424,2430,2435,2442,2446,2455,2461,2468,2473,2478,2483,2488,2493,2501,2507,2513,2518,2523,2527,2532,2540,2548,2555,2560,2564,2569,2573,2579,2584,2589,2595,2599,2600,2606,2610,2613,2618,2622,2625,2630,2633,2636,2641,2647,2650,2655,2659,2664,2667,2672,2673,2683,2690,2696,2700,2706,2715,2723,2732,2740,2747,2754,2762,2770,2777,2784,2791,2795,2801,2806,2811,2814,2818,2821,2822,2825,2827,2831,2834,2839,2844,2847,2849,2851,2852,2855,2857,2862,2866,2872,2875,2881,2887,2893,2898,2904,2910,2915,2922,2927,2932,2941,2951,2961,2971,2980,2992,3003,3015,3029,3043,3055,3068,3081,3091,3103,3115,3125,3138,3149,3159,3166,3172,3177,3181,3187,3194,3199,3203,3208,3214,3219,3222,3228,3235,3242,3247,3252,3257,3261,3265,3269,3273,3277,3280,3283,3287,3291,3295,3299,3302,3308,3311,3316,3322,3326,3329,3333,3336,3340,3346,3350,3354,3358,3363,3366,3370,3374,3378,3381,3385,3389,3392,3398,3403,3408,3414,3418,3424,3430,3433,3437,3441,3447,3450,3455,3459,3464,3469,3476,3480,3484,3488,3493,3497,3501,3503,3508,3514,3518,3523,3528,3533,3537,3539,3543,3548,3552,3555,3559,3563,3566,3568,3571,3576,3582,3583,3585,3587,3591,3595,3602,3606,3609,3613,3617,3620,3624,3628,3633,3637,3641,3645,3649,3654,3660,3663,3668,3671,3674,3678,3686,3690,3694,3698,3701,3704,3712,3717,3724,3732,3739,3745,3752,3759,3768,3775,3782,3788,3800,3812,3824,3839,3852,3864,3879,3890,3902,3914,3929,3941,3955,3970,3978,3986,3993,3996,4003,4012,4021,4031,4042,4053,4060,4063,4066,4068,4075,4079,4083,4089,4094,4098,4102,4105,4110,4114,4120,4125,4129,4132,4137,4140,4144,4149,4154,4158,4161,4166,4170,4173,4178,4182,4188,4191,4196,4199,4205,4210,4215,4218,4225,4229,4233,4238,4243,4247,4252,4256,4261,4264,4268,4272,4278,4282,4285,4287,4291,4294,4298,4303,4310,4316,4320,4323,4329,4335,4341,4347,4354,4358,4365,4372,4378,4385,4391,4398,4407,4414,4424,4432,4444,4453,4464,4473,4481,4486,4491,4495,4500,4505,4511,4515,4519,4524,4527,4530,4535,4538,4542,4545,4549,4556,4560,4564,4569,4574,4579,4583,4588,4592,4595,4598,4602,4606,4608,4611,4613,4616,4620,4623,4626,4630,4637,4645,4655,4665,4672,4681,4695,4705,4716,4726,4734,4749,4756,4766,4775,4784,4800,4810,4815,4828,4843,4852,4862,4873,4883,4895,4906,4919,4933,4942,4956,4970,4980,4995,5012,5029,5042,5055,5069,5078,5083,5086,5089,5093,5096,5099,5102,5104,5107,5110,5113,5115,5120,5125,5127,5129,5133,5135,5138,5142,5147,5150,5153,5155,5159,5161,5164,5168,5174,5177,5182,5185,5189,5192,5196,5199,5204,5208,5213,5217,5220,5222,5227,5229,5233,5236,5239,5241,5246,5253,5260,5267,5272,5287,5301,5313,5322,5331,5342,5358,5374,5385,5402,5415,5420,5429,5440,5447,5454,5460,5469,5475,5486,5494,5500,5513,5526,5542,5552,5570,5589,5596,5606,5616,5623,5641,5657,5672,5688,5702,5712,5728,5743,5758,5779,5798,5811,5829,5843,5852,5867,5881,5891,5908,5918,5931,5947,5958,5970,5989,6002,6015,6024,6041,6054,6067,6080,6092,6105,6118,6129,6135,6139,6151,6162,6176,6184,6193,6199,6207,6215,6221,6230,6236];
 function rangeInfo(p,[a,b]){
+  if(isCourt(p)){const ss=SEQ.slice(a,b).map(s=>s-1);const names=ss.map(k=>SURAH_FR[k]);
+    const what=ss.length===1?`Sourate ${names[0]} (${AYA_COUNT[ss[0]]} ayat)`:names.slice(0,-1).join(", ")+" et "+names[names.length-1];
+    const pg=ss.map(k=>pageOfAyah(AYA_START[k]));const pa=Math.min(...pg),pb=Math.max(...pg);
+    return{what,surah:ss.map(k=>`<span class="ar" lang="ar">${SURAH_AR[k]}</span>`).join("<span>·</span>")+`<span>· ${ss.length>1?"Sourates entières":"Sourate entière"} · ${pa===pb?"Page "+pa:"Pages "+pa+" à "+pb}</span>`}}
   let lab=null;
   if(!isAya(p)){lab=fmtRange(a,b);const A=PAGE_H[a],B=PAGE_H[b];if(A===B){a=A-1;b=A;lab+=" (suite de l’aya)"}else{a=A;b=B}}
   const segs=[];let i=a;
@@ -265,10 +276,10 @@ function stats(plan,val){
   let lT=0,lD=0,lV=0,rT=0,rD=0,rV=0,late=0,pend=0,valid=0;
   for(const[k,e] of map){
     const f=faits[k]||{}, v=val[k]||{}, past=k<key(t);
-    if(e.learn){lT++;if(f.a)lD++;if(v.a){lV++;const r=toAyah(plan,e.learn);valid+=r[1]-r[0]}else if(f.a)pend++;else if(past)late++}
+    if(e.learn){lT++;if(f.a)lD++;if(v.a){lV++;valid+=ayLen(toAyah(plan,e.learn))}else if(f.a)pend++;else if(past)late++}
     if(e.rev){rT++;if(f.r)rD++;if(v.r)rV++;else if(f.r)pend++;else if(past)late++}
   }
-  return{lT,lD,lV,rT,rD,rV,late,pend,valid:Math.min(valid,TOTAL_AYA),base:isAya(plan)?(plan.deja||0):(PAGE_H[plan.deja||0]||0)};
+  return{lT,lD,lV,rT,rD,rV,late,pend,valid:Math.min(valid,TOTAL_AYA),base:isCourt(plan)?JUZ_AYA[29]:isAya(plan)?(plan.deja||0):(PAGE_H[plan.deja||0]||0)};
 }
 function rythmeTxt(p){
   const q=(qteList(p).find(x=>x[0]===p.qte)||[0,isAya(p)?p.qte+" versets":pagesTxt(p.qte)+" p."])[1];
@@ -364,7 +375,8 @@ function formHTML(){
   return `<section class="form">
   ${S.plan||S.editStudent?"":`<p class="hint" style="margin-bottom:16px">Choisissez votre rythme : le calendrier vous dira chaque jour quoi apprendre et quoi réviser, .</p>`}
   <div class="field"><label for="nom">Prénom</label><input id="nom" type="text" data-in="nom" value="${esc(f.nom)}" autocomplete="given-name" placeholder="Votre prénom"></div>
-  ${isAya(f)?dejaAyaHTML(f):`<div class="field"><label for="deja">Pages déjà mémorisées</label><p class="hint">À partir du début du Coran. Laissez 0 si vous commencez.</p><input id="deja" type="number" min="0" max="604" step="0.5" data-in="deja" value="${f.deja/2}"></div>`}
+  <div class="field"><span class="lab">Type de programme</span><div class="chips">${chip("type","aya","Coran",!isCourt(f))}${chip("type","court","Petites sourates",isCourt(f))}</div><p class="hint" style="margin-top:8px">${isCourt(f)?"Al-Fatiha, puis le Hizb Sabbih à l’envers : An-Nas, Al-Falaq, Al-Ikhlas… jusqu’à Al-A’la. Chaque séance = des sourates entières.":"Apprentissage par page, demi-page ou hizb, à partir de la sourate de votre choix."}</p></div>
+  ${isCourt(f)?courtStartHTML(f):isAya(f)?dejaAyaHTML(f):`<div class="field"><label for="deja">Pages déjà mémorisées</label><p class="hint">À partir du début du Coran. Laissez 0 si vous commencez.</p><input id="deja" type="number" min="0" max="604" step="0.5" data-in="deja" value="${f.deja/2}"></div>`}
   <div class="field"><span class="lab">Quantité à apprendre par séance</span>${isAya(f)?`<p class="hint">L’application calcule elle-même de quelle aya à quelle aya, d’après le mushaf de Médine.</p>`:""}<div class="chips">${qteList(f).map(([v,l])=>chip("qte",v,l,f.qte===v)).join("")}</div></div>
   <div class="field"><span class="lab">Jours d’apprentissage</span><div class="chips days">${WEEK.map(w=>chip("jour",w,DOW_SHORT[w],f.joursApp.includes(w))).join("")}</div></div>
   <div class="field"><span class="lab">Quantité à réviser par séance</span><p class="hint">La révision reprend ce qui a été appris depuis le début du programme, puis recommence.</p><div class="chips">${revList(f).map(([v,l])=>chip("revq",v,l,f.revQte===v)).join("")}</div></div>
@@ -373,6 +385,10 @@ function formHTML(){
   <div class="estimate">${fin?`À ce rythme, vous terminerez le Coran vers <strong>${fmtDate(fin,{month:"long",year:"numeric"})}</strong>.`:"Choisissez au moins un jour d’apprentissage."}</div>
   ${!f.nom.trim()?`<p class="err">Indiquez votre prénom pour que l’enseignant vous reconnaisse.</p>`:""}
   <button class="primary" data-act="saveform" ${ok?"":"disabled"}>${S.editStudent?"Enregistrer le rythme de l’élève":S.plan?"Enregistrer les changements":"Créer mon programme"}</button></section>`;
+}
+function courtStartHTML(f){
+  const opts=SEQ.map((s,i)=>`<option value="${i}"${i===(f.deja||0)?" selected":""}>${s}. ${SURAH_FR[s-1]}</option>`).join("");
+  return `<div class="field"><label for="dejaC">Commencer à la sourate</label><select id="dejaC" data-in="dejaC">${opts}</select></div>`;
 }
 function dejaAyaHTML(f){
   const [s,a]=ayaPos(Math.min(f.deja||0,TOTAL_AYA-1));
@@ -416,6 +432,7 @@ app.addEventListener("click",ev=>{
       writeChain=writeChain.then(()=>S.db.doc("validations/"+sid).set(all)).catch(()=>{S.note="La validation n’a pas pu être enregistrée. Réessayez.";render()});return}
     case"month":S.month=new Date(S.month.getFullYear(),S.month.getMonth()+Number(v),1);break;
     case"done":{const p=JSON.parse(JSON.stringify(S.plan));p.faits=p.faits||{};const cur=p.faits[S.sel]||{};cur[v]=!cur[v];p.faits[S.sel]=cur;p.maj=new Date().toISOString();save(p);return}
+    case"type":if(f.mode!==v){f.mode=v;f.deja=0;f.qte=v==="court"?"s1":"p1";f.revQte=v==="court"?"s5":"q2"}break;
     case"mode":if(f.mode!==v){f.mode=v;f.deja=0;f.qte=v==="aya"?"v5":2;f.revQte=v==="aya"?"q2":10}break;
     case"qte":f.qte=isAya(f)?v:Number(v);break;
     case"jour":{const w=Number(v);f.joursApp=f.joursApp.includes(w)?f.joursApp.filter(x=>x!==w):[...f.joursApp,w];break}
@@ -439,6 +456,7 @@ app.addEventListener("input",ev=>{
   if(k==="nom"){S.form.nom=ev.target.value;refreshFormFooter();return}
   if(k==="deja"){const n=Math.round(Math.max(0,Math.min(604,Number(ev.target.value)||0))*2);S.form.deja=n}
   if(k==="debut"&&ev.target.value)S.form.debut=ev.target.value;
+  if(k==="dejaC"){S.form.deja=Number(ev.target.value)||0;refreshFormFooter();return}
   if(k==="dejaS"){const s=Number(ev.target.value);S.form.deja=AYA_START[s];render();return}
   if(k==="dejaA"){const[s]=ayaPos(Math.min(S.form.deja||0,TOTAL_AYA-1));const a=Math.max(1,Math.min(AYA_COUNT[s],Math.round(Number(ev.target.value)||1)));S.form.deja=AYA_START[s]+a-1}
   refreshFormFooter();
@@ -454,7 +472,7 @@ function refreshFormFooter(){ // met à jour l’estimation sans perdre le focus
 const MUSHAF_IDS=["c567e25c4a4979b14b0e739e85597b74", "7278ab3e2c6cfbd1938bdcdb4a37dea6", "fd6e99cdb83ab1290283022440f84fc8", "ead8f4dcbb4855d02056fcfad3b79eaf", "f959068bc3d06f90661721ce8f2d6b13", "208e7ac034862ec69320d718439f463e", "5aa8962426bdb8f77a33e6d866b1d29e", "5e452565681ff12cece452cb356f0f6b", "4236a2c849a7b4b2a2652242157ca64b", "5b4af1793f2b0da844501115a396293a", "4edc818a634465e731cab3465224016e", "b8b3acdfeacf7e9120bc2db9d8829134", "f30dcd29dd10756039ed92fca72c7cd4", "30b4010d05aa9bd18155a40a3097fa50", "156f9ebb4264082a2a4c6a4c71972172"];
 const SURAH_GLYPH=["\ufc45 ", "\ufc46 ", "\ufc47 ", "\ufc4a ", "\ufc4b ", "\ufc4e ", "\ufc4f ", "\ufc51 ", "\ufc52 ", "\ufc53 ", "\ufc55 ", "\ufc56 ", "\ufc58 ", "\ufc5a ", "\ufc5b ", "\ufc5c ", "\ufc5d ", "\ufc5e ", "\ufc61 ", "\ufc62 ", "\ufc64 ", "\ufb51 ", "\ufb52 ", "\ufb54 ", "\ufb55 ", "\ufb57 ", "\ufb58 ", "\ufb5a ", "\ufb5b ", "\ufb5d ", "\ufb5e ", "\ufb60 ", "\ufb61 ", "\ufb63 ", "\ufb64 ", "\ufb66 ", "\ufb67 ", "\ufb69 ", "\ufb6a ", "\ufb6c ", "\ufb6d ", "\ufb6f ", "\ufb70 ", "\ufb72 ", "\ufb73 ", "\ufb75 ", "\ufb76 ", "\ufb78 ", "\ufb79 ", "\ufb7b ", "\ufb7c ", "\ufb7e ", "\ufb7f ", "\ufb81 ", "\ufb82 ", "\ufb84 ", "\ufb85 ", "\ufb87 ", "\ufb88 ", "\ufb8a ", "\ufb8b ", "\ufb8d ", "\ufb8e ", "\ufb90 ", "\ufb91 ", "\ufb93 ", "\ufb94 ", "\ufb96 ", "\ufb97 ", "\ufb99 ", "\ufb9a ", "\ufb9c ", "\ufb9d ", "\ufb9f ", "\ufba0 ", "\ufba2 ", "\ufba3 ", "\ufba5 ", "\ufba6 ", "\ufba8 ", "\ufba9 ", "\ufbab ", "\ufbac ", "\ufbae ", "\ufbaf ", "\ufbb1 ", "\ufbb2 ", "\ufbb4 ", "\ufbb5 ", "\ufbb7 ", "\ufbb8 ", "\ufbba ", "\ufbbb ", "\ufbbd ", "\ufbbe ", "\ufbc0 ", "\ufbc1 ", "\ufbd3 ", "\ufbd4 ", "\ufbd6 ", "\ufbd7 ", "\ufbd9 ", "\ufbda ", "\ufbdc ", "\ufbdd ", "\ufbdf ", "\ufbe0 ", "\ufbe2 ", "\ufbe3 ", "\ufbe5 ", "\ufbe6 ", "\ufbe8 ", "\ufbe9 ", "\ufbeb"];
 const BISM={2:"\ufc9a\ufc9b\ufc9e\ufca4",95:"\ufb57\ufcab\ufcae\ufcb4",97:"\ufb57\ufcab\ufcae\ufcb4",def:"\ufcaa\ufcab\ufcae\ufcb4"};
-function toAyah(p,[a,b]){if(isAya(p))return[a,b];const A=PAGE_H[a],B=PAGE_H[b];return A===B?[A-1,A]:[A,B]}
+function toAyah(p,[a,b]){if(isCourt(p))return SEQ.slice(a,b).map(s=>[AYA_START[s-1],AYA_START[s-1]+AYA_COUNT[s-1]]);if(isAya(p))return[a,b];const A=PAGE_H[a],B=PAGE_H[b];return A===B?[A-1,A]:[A,B]}
 function pageOfAyah(i){let p=1;while(p<604&&PAGE_H[2*p]<=i)p++;return p}
 const M={page:1,l:null,r:[],el:null,chunks:{},fonts:{},base:null};
 function b64buf(s){const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
@@ -463,7 +481,7 @@ function loadChunk(k){if(!M.chunks[k])M.chunks[k]=fetch("mushaf_"+String(k+1).pa
 async function pageData(p){const d=(await loadChunk(Math.min(14,Math.floor((p-1)/40))))[p];if(!M.fonts[p]){const f=new FontFace("QPC"+p,b64buf(d.f));await f.load();document.fonts.add(f);M.fonts[p]=1}return d}
 function openMushaf(which){
   const R=S.dayRanges;if(!R)return;M.l=which==="l"?R.l:null;M.r=which==="r"?(R.r||[]):[];if(!M.l&&!M.r.length){M.l=R.l;M.r=R.r||[]}
-  const start=which==="l"&&R.l?R.l[0]:(M.r[0]?M.r[0][0]:R.l[0]);M.page=pageOfAyah(start);
+  const start=which==="l"&&R.l?firstAy(R.l):(M.r[0]?firstAy(M.r[0]):firstAy(R.l));M.page=pageOfAyah(start);
   if(!M.el){M.el=document.createElement("div");M.el.className="mushaf";M.el.setAttribute("role","dialog");M.el.setAttribute("aria-label","Mushaf");document.body.appendChild(M.el);
     M.el.addEventListener("click",ev=>{const b=ev.target.closest("[data-m]");if(!b)return;const a=b.dataset.m;if(a==="close")closeMushaf();else if(a==="next"&&M.page<604)showPage(M.page+1);else if(a==="prev"&&M.page>1)showPage(M.page-1)});
     document.addEventListener("keydown",ev=>{if(!M.el||M.el.hidden)return;if(ev.key==="Escape")closeMushaf();if(ev.key==="ArrowLeft"&&M.page<604)showPage(M.page+1);if(ev.key==="ArrowRight"&&M.page>1)showPage(M.page-1)});
@@ -477,7 +495,7 @@ function openMushaf(which){
 }
 function closeMushaf(){if(M.el)M.el.hidden=true;document.body.style.overflow=""}
 function sizeMushaf(){const pg=document.getElementById("mh-page");if(pg)pg.style.setProperty("--w",pg.clientWidth+"px")}
-const inR=(y,r)=>r&&y>=r[0]&&y<r[1];
+const inR=(y,r)=>!!r&&(Array.isArray(r[0])?r.some(q=>y>=q[0]&&y<q[1]):y>=r[0]&&y<r[1]);
 async function showPage(p){
   M.page=p;
   M.el.innerHTML=`<div class="mh-bar"><button data-m="next" ${p>=604?"disabled":""} aria-label="Page suivante">‹ Suivante</button><div class="mh-title">Page ${p}</div><button data-m="prev" ${p<=1?"disabled":""} aria-label="Page précédente">Précédente ›</button><button data-m="close" aria-label="Fermer">✕</button></div>
