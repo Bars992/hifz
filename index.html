@@ -174,6 +174,15 @@ input[type=text],input[type=number],input[type=date],select{width:100%;font:inhe
 .rbtn{margin-top:8px;border:1.5px solid var(--warn);background:transparent;color:var(--warn);border-radius:999px;padding:6px 12px;font-size:.8rem;font-weight:500}
 .pi-btns{display:flex;flex-direction:column;gap:6px;flex:none}.pi-btns .rbtn{margin-top:0;padding:8px 12px}
 .redoask{margin:8px 0 10px;padding:10px;border:1px dashed var(--warn);border-radius:10px;width:100%}
+.field.ftodo,.field.fdone{border-radius:12px;padding:10px 12px;margin-left:-12px;margin-right:-12px;border:1px solid transparent}
+.field.ftodo{border-color:var(--gold)}
+@media (prefers-reduced-motion:no-preference){.field.ftodo{animation:fpulse 1.6s ease-in-out infinite}}
+@media (prefers-reduced-motion:reduce){.field.ftodo{background:rgba(166,124,30,.14)}}
+@keyframes fpulse{0%,100%{background:transparent}50%{background:rgba(166,124,30,.18)}}
+.ftag{display:inline-block;font-size:.72rem;font-weight:600;border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:2px}
+.ftodo .ftag{background:var(--gold);color:#fff}
+.fdone .ftag{background:var(--learn-soft);color:var(--learn)}
+.login input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .logout{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 10px;font-size:.75rem;margin-left:6px;vertical-align:1px}
 .login{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 16px;margin-top:8px}
 .login h2{margin:0 0 4px;font-size:1.2rem}.login .msg{font-size:.85rem;margin:10px 0 0}.login .msg.err{color:var(--warn)}.login .msg.ok{color:var(--learn)}
@@ -252,7 +261,7 @@ function loginScreen(sb,mode){
 async function sbReady(){
   if(!window.supabase){await new Promise(r=>{let n=0;const iv=setInterval(()=>{if(window.supabase||++n>100){clearInterval(iv);r()}},100)})}
   if(!window.supabase){document.getElementById("app").innerHTML='<p class="empty">Impossible de charger l’application. Vérifiez votre connexion et rechargez la page.</p>';throw new Error("supabase")}
-  const sb=window.supabase.createClient(SB_URL,SB_KEY);window.SBC=sb;
+  const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,lock:async(name,timeout,fn)=>await fn()}});window.SBC=sb;
   const recovery=/type=recovery/.test(location.hash);
   let{data:{session}}=await sb.auth.getSession();
   if(recovery&&session)session=await loginScreen(sb,"newpw");
@@ -262,6 +271,9 @@ async function sbReady(){
   const user={id:async()=>uid,isOwner:async()=>!!pr};
   window.claude={use:async n=>n==="db"?sbDb(sb):n==="user"?user:null};
 }
+window.addEventListener("error",e=>{const a=document.getElementById("app");if(a&&/Chargement/.test(a.textContent))a.innerHTML='<p class="empty">Erreur : '+String(e.message||e.error).replace(/</g,"&lt;")+'</p><p><button class="primary" onclick="location.reload()">Recharger</button></p>'});
+window.addEventListener("unhandledrejection",e=>{const a=document.getElementById("app");if(a&&/Chargement/.test(a.textContent))a.innerHTML='<p class="empty">Erreur : '+String((e.reason&&e.reason.message)||e.reason).replace(/</g,"&lt;")+'</p><p><button class="primary" onclick="location.reload()">Recharger</button></p>'});
+setTimeout(()=>{const a=document.getElementById("app");if(a&&/^\s*Chargement/.test(a.textContent))a.innerHTML='<p class="empty">Le chargement prend trop de temps. Fermez les autres onglets ouverts sur ce site, puis rechargez.</p><p><button class="primary" onclick="location.reload()">Recharger</button></p>'},20000);
 /* ====================== */
 const TOTAL=1208; // demi-pages (604 pages, mushaf de Médine)
 const SURAH_START=[1,2,50,77,106,128,151,177,187,208,221,235,249,255,262,267,282,293,305,312,322,332,342,350,359,367,377,385,396,404,411,415,418,428,434,440,446,453,458,467,477,483,489,496,499,502,507,511,515,518,520,523,526,528,531,534,537,542,545,549,551,553,554,556,558,560,562,564,566,568,570,572,574,575,577,578,580,582,583,585,586,587,587,589,590,591,591,592,593,594,595,595,596,596,597,597,598,598,599,599,600,600,601,601,601,602,602,602,603,603,603,604,604,604];
@@ -541,7 +553,7 @@ function formHTML(){
   if(!S.form){const src=S.editStudent?S.students.find(x=>x.id===S.editStudent):S.plan;S.form=src?JSON.parse(JSON.stringify(src)):defaults();delete S.form.id;S.form.joursRev=joursRevOf(S.form);delete S.form.revFreq;delete S.form.revJour;if(isCourt(S.form)){S.form.mode="aya";S.form.deja=0;S.form.qte="p1";S.form.revQte="q2"}if(!isAya(S.form)){const mp={10:"q2",20:"q4",40:"q8"};S.form.mode="aya";S.form.deja=PAGE_H[S.form.deja]||0;S.form.qte="p"+S.form.qte;S.form.revQte=mp[S.form.revQte]||"p"+S.form.revQte}else{if(typeof S.form.qte==="number"||S.form.qte[0]==="v")S.form.qte="p1";if(typeof S.form.revQte==="number"||S.form.revQte[0]==="v")S.form.revQte="q2"}}
   const f=S.form, chip=(act,v,l,on)=>`<button class="chip" data-act="${act}" data-v="${v}" aria-pressed="${on}">${l}</button>`;
   const fin=finEstimee(f);
-  const ok=f.nom.trim()&&f.joursApp.length;
+  const miss=isNewForm()?TODO_KEYS.filter(([k])=>!(S.touched||{})[k]).map(x=>x[1]):[];const ok=f.nom.trim()&&f.joursApp.length&&!miss.length;
   return `<section class="form">
   ${S.plan||S.editStudent?"":`<p class="hint" style="margin-bottom:16px">Choisissez votre rythme : le calendrier vous dira chaque jour quoi apprendre et quoi réviser.</p>`}
   <div class="field"><label for="nom">Prénom</label><input id="nom" type="text" data-in="nom" value="${esc(f.nom)}" autocomplete="given-name" placeholder="Votre prénom"></div>
@@ -549,14 +561,14 @@ function formHTML(){
   
   <div class="field"><span class="lab">Sens de l’apprentissage</span><div class="levels sens"><button class="level" data-act="sens" data-v="debut" aria-pressed="${!isFin(f)}"><strong>Depuis Al-Fatiha</strong><span>Al-Fatiha, Al-Baqara, Al-Imran…</span></button><button class="level" data-act="sens" data-v="fin" aria-pressed="${isFin(f)}"><strong>Depuis la fin</strong><span>Hizb Sabbih, puis on remonte</span></button></div><p class="hint" style="margin-top:8px">${isFin(f)?"Hizb 60 (Al-A’la → An-Nas), puis hizb 59, 58… jusqu’au hizb 54, chacun lu en descendant. Ensuite sourate par sourate en remontant : Al-Qamar, An-Najm, At-Tur… jusqu’à Al-Fatiha.":"Al-Fatiha, puis Al-Baqara, Al-Imran… dans l’ordre du mushaf."}</p></div>
   ${isFin(f)?finStartHTML(f):isCourt(f)?courtStartHTML(f):isAya(f)?dejaAyaHTML(f):`<div class="field"><label for="deja">Pages déjà mémorisées</label><p class="hint">À partir du début du Coran. Laissez 0 si vous commencez.</p><input id="deja" type="number" min="0" max="604" step="0.5" data-in="deja" value="${f.deja/2}"></div>`}
-  <div class="field"><span class="lab">Quantité à apprendre par séance</span>${isAya(f)?`<p class="hint">L’application calcule elle-même de quelle aya à quelle aya, d’après le mushaf de Médine.</p>`:""}<div class="chips">${qteList(f).map(([v,l])=>chip("qte",v,l,f.qte===v)).join("")}</div></div>
-  <div class="field"><span class="lab">Jours d’apprentissage</span><div class="chips days">${WEEK.map(w=>chip("jour",w,DOW_SHORT[w],f.joursApp.includes(w))).join("")}</div></div>
-  <div class="field"><span class="lab">Quantité à réviser par séance</span><p class="hint">La révision reprend ce qui a été appris depuis le début du programme, puis recommence.</p><div class="chips">${revList(f).map(([v,l])=>chip("revq",v,l,f.revQte===v)).join("")}</div>${f.revQte==="hz"?`<p class="hint" style="margin-top:8px">Les jours de révision, l’élève reprend toujours depuis le début du hizb qu’il est en train d’apprendre, jusqu’à la dernière partie apprise.</p>`:""}</div>
+  <div class="field${fcls("qte")}"><span class="lab">Quantité à apprendre par séance${ftag("qte")}</span>${isAya(f)?`<p class="hint">L’application calcule elle-même de quelle aya à quelle aya, d’après le mushaf de Médine.</p>`:""}<div class="chips">${qteList(f).map(([v,l])=>chip("qte",v,l,f.qte===v)).join("")}</div></div>
+  <div class="field${fcls("jours")}"><span class="lab">Jours d’apprentissage${ftag("jours")}</span><div class="chips days">${WEEK.map(w=>chip("jour",w,DOW_SHORT[w],f.joursApp.includes(w))).join("")}</div></div>
+  <div class="field${fcls("rev")}"><span class="lab">Quantité à réviser par séance${ftag("rev")}</span><p class="hint">La révision reprend ce qui a été appris depuis le début du programme, puis recommence.</p><div class="chips">${revList(f).map(([v,l])=>chip("revq",v,l,f.revQte===v)).join("")}</div>${f.revQte==="hz"?`<p class="hint" style="margin-top:8px">Les jours de révision, l’élève reprend toujours depuis le début du hizb qu’il est en train d’apprendre, jusqu’à la dernière partie apprise.</p>`:""}</div>
   ${f.revQte==="hz"?`<div class="field"><span class="lab">Révision des hizb déjà terminés</span><p class="hint">Un autre jour, l’élève révise aussi les hizb qu’il a finis, morceau par morceau.</p><div class="chips">${[["q2","½ hizb"],["q4","1 hizb"],["q8","1 juz"]].map(([v,l])=>chip("ancq",v,l,(f.revAncQ||"q4")===v)).join("")}</div><p class="hint" style="margin:10px 0 6px">Quels jours ?</p><div class="chips days">${WEEK.map(w=>chip("ajour",w,DOW_SHORT[w],(f.joursAnc||[]).includes(w))).join("")}</div></div>`:""}
-  <div class="field"><span class="lab">Jours de révision</span><p class="hint">Choisissez les jours où vous révisez. Ils peuvent être les mêmes que les jours d’apprentissage ou différents.</p><div class="chips days">${WEEK.map(w=>chip("rjour",w,DOW_SHORT[w],f.joursRev.includes(w))).join("")}</div></div>
+  <div class="field${fcls("rjours")}"><span class="lab">Jours de révision${ftag("rjours")}</span><p class="hint">Choisissez les jours où vous révisez. Ils peuvent être les mêmes que les jours d’apprentissage ou différents.</p><div class="chips days">${WEEK.map(w=>chip("rjour",w,DOW_SHORT[w],f.joursRev.includes(w))).join("")}</div></div>
   <div class="field"><label for="debut">Date de début</label><input id="debut" type="date" data-in="debut" value="${f.debut}"></div>
   <div class="estimate">${fin?`À ce rythme, vous terminerez ${isCourt(f)?"les petites sourates":"le Coran"} vers <strong>${fmtDate(fin,{month:"long",year:"numeric"})}</strong>.`:"Choisissez au moins un jour d’apprentissage."}</div>
-  ${!f.nom.trim()?`<p class="err">Indiquez votre prénom pour que l’enseignant vous reconnaisse.</p>`:""}
+  ${miss.length?`<p class="err">Il reste à choisir : ${miss.join(", ")}.</p>`:""}${!f.nom.trim()?`<p class="err">Indiquez votre prénom pour que l’enseignant vous reconnaisse.</p>`:""}
   <button class="primary" data-act="saveform" ${ok?"":"disabled"}>${S.editStudent?"Enregistrer le rythme de l’élève":S.plan?"Enregistrer les changements":"Créer mon programme"}</button>
   ${S.plan&&!S.editStudent?(S.confirmReset?`<div class="resetbox"><p><strong>Tout effacer ?</strong> Votre rythme et toutes les séances cochées seront supprimés. Vous repartirez de zéro.</p><div class="chips"><button class="chip danger" data-act="reset2">Oui, tout effacer</button><button class="chip" data-act="reset0">Annuler</button></div></div>`:`<button class="resetbtn" data-act="reset1">Réinitialiser tout mon programme</button>`):""}</section>`;
 }
@@ -592,12 +604,17 @@ function repFieldsHTML(f){
 function finStartHTML(f){
   const cur=BLK.indexOf(blkOf(f.deja||0));
   const opts=BLK.map((b,i)=>`<option value="${i}"${i===cur?" selected":""}>${b.lab}</option>`).join("");
-  return `<div class="field"><label class="lab" for="dejaF">Point de départ : par où l’élève commence ?</label><p class="hint">Choisissez le hizb ou la sourate de la toute première séance.</p><select id="dejaF" data-in="dejaF">${opts}</select>${previewHTML(f)}</div>`;
+  return `<div class="field${fcls("start")}"><label class="lab" for="dejaF">Point de départ : par où l’élève commence ?${ftag("start")}</label><p class="hint">Choisissez le hizb ou la sourate de la toute première séance.</p><select id="dejaF" data-in="dejaF">${opts}</select>${previewHTML(f)}</div>`;
 }
 function courtStartHTML(f){
   const opts=SEQ.map((s,i)=>`<option value="${i}"${i===(f.deja||0)?" selected":""}>${s}. ${SURAH_FR[s-1]}</option>`).join("");
   return `<div class="field"><label for="dejaC">Commencer à la sourate</label><select id="dejaC" data-in="dejaC">${opts}</select></div>`;
 }
+const TODO_KEYS=[["start","le point de départ"],["qte","la quantité"],["jours","les jours d’apprentissage"],["rev","la révision"],["rjours","les jours de révision"]];
+const isNewForm=()=>!S.plan&&!S.editStudent&&S.tab!=="reprise";
+const fcls=k=>isNewForm()?((S.touched||{})[k]?" fdone":" ftodo"):"";
+const ftag=k=>isNewForm()?`<span class="ftag">${(S.touched||{})[k]?"✓ Choisi":"À choisir"}</span>`:"";
+function touch(k,el){S.touched=S.touched||{};if(S.touched[k])return;S.touched[k]=true;if(el){const fd=el.closest(".field");if(fd){fd.classList.remove("ftodo");fd.classList.add("fdone");const tg=fd.querySelector(".ftag");if(tg)tg.textContent="✓ Choisi"}}}
 function previewHTML(f){
   let h="";try{const a=Math.min(f.deja||0,TOTAL_AYA-1),b=Math.min(learnStep(f,a),TOTAL_AYA);const r=rangeInfo(f,[a,b]);
   h=`Première séance : <strong>${r.what}</strong>, ${r.surah.replace(/<span class="ar"[^>]*>[^<]*<\/span>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").replace(/^ ?/,"")}`}catch(e){}
@@ -606,7 +623,7 @@ function previewHTML(f){
 function dejaAyaHTML(f){
   const [s,a]=ayaPos(Math.min(f.deja||0,TOTAL_AYA-1));
   const opts=SURAH_FR.map((n,k)=>`<option value="${k}"${k===s?" selected":""}>${k+1}. ${n}</option>`).join("");
-  return `<div class="field"><span class="lab">Point de départ : par où l’élève commence ?</span><p class="hint">Choisissez la sourate, puis le numéro de l’aya où commence la toute première séance d’apprentissage.</p>
+  return `<div class="field${fcls("start")}"><span class="lab">Point de départ : par où l’élève commence ?${ftag("start")}</span><p class="hint">Choisissez la sourate, puis le numéro de l’aya où commence la toute première séance d’apprentissage.</p>
   <div style="display:flex;gap:8px"><label style="flex:2;min-width:0"><span class="mini">Sourate</span><select data-in="dejaS" style="width:100%">${opts}</select></label>
   <label style="flex:1;min-width:0"><span class="mini">Aya n° (1 à ${AYA_COUNT[s]})</span><input type="number" data-in="dejaA" min="1" max="${AYA_COUNT[s]}" value="${a}"></label></div>${previewHTML(f)}</div>`;
 }
@@ -675,19 +692,19 @@ app.addEventListener("click",ev=>{
     case"sens":if((f.sens||"debut")!==v){f.sens=v;f.deja=0}break;
     case"type":if(f.mode!==v){f.mode=v;f.deja=0;f.qte=v==="court"?"s1":"p1";f.revQte=v==="court"?"s5":"q2"}break;
     case"mode":if(f.mode!==v){f.mode=v;f.deja=0;f.qte=v==="aya"?"v5":2;f.revQte=v==="aya"?"q2":10}break;
-    case"qte":f.qte=isAya(f)?v:Number(v);break;
-    case"jour":{const w=Number(v);f.joursApp=f.joursApp.includes(w)?f.joursApp.filter(x=>x!==w):[...f.joursApp,w];break}
-    case"revq":f.revQte=isAya(f)?v:Number(v);if(v==="hz"&&!f.joursAnc){f.joursAnc=[6];f.revAncQ="q4"}break;
+    case"qte":touch("qte");f.qte=isAya(f)?v:Number(v);break;
+    case"jour":touch("jours");{const w=Number(v);f.joursApp=f.joursApp.includes(w)?f.joursApp.filter(x=>x!==w):[...f.joursApp,w];break}
+    case"revq":touch("rev");f.revQte=isAya(f)?v:Number(v);if(v==="hz"&&!f.joursAnc){f.joursAnc=[6];f.revAncQ="q4"}break;
     case"ancq":f.revAncQ=v;break;
     case"ajour":{const w=Number(v);const a=f.joursAnc||[];f.joursAnc=a.includes(w)?a.filter(x=>x!==w):[...a,w];break}
-    case"rjour":{const w=Number(v);f.joursRev=f.joursRev.includes(w)?f.joursRev.filter(x=>x!==w):[...f.joursRev,w];break}
+    case"rjour":{touch("rjours");const w=Number(v);f.joursRev=f.joursRev.includes(w)?f.joursRev.filter(x=>x!==w):[...f.joursRev,w];break}
     case"editStudent":S.editStudent=S.viewing;S.form=null;break;
     case"cancelEdit":S.editStudent=null;S.form=null;break;
     case"savecfg":{if(!S.db)return;const d={whatsapp:(S.cfgDraft.whatsapp||"").trim(),zoom:(S.cfgDraft.zoom||"").trim()};if(d.zoom&&!/^https:\/\//.test(d.zoom)){S.note="Le lien Zoom doit commencer par https://";render();return}S.cfg=d;S.cfgSaved=false;S.cfgOpen=false;S.note="";render();
       writeChain=writeChain.then(()=>S.db.doc("config/prof").set(d)).catch(()=>{S.note="Les réglages n’ont pas pu être enregistrés.";render()});return}
     case"reset1":S.confirmReset=true;break;
     case"reset0":S.confirmReset=false;break;
-    case"reset2":{S.confirmReset=false;S.plan=null;S.form=null;S.tab="cal";
+    case"reset2":{S.confirmReset=false;S.touched={};S.plan=null;S.form=null;S.tab="cal";
       if(S.local){try{localStorage.removeItem("hifz-plan")}catch(e){}render();return}
       render();writeChain=writeChain.then(()=>S.db.doc("eleves/"+S.uid).delete()).catch(()=>{S.note="La réinitialisation a échoué. Réessayez.";render()});return}
     case"saveform":{if(S.editStudent){const sid=S.editStudent,old=S.students.find(x=>x.id===sid)||{};const pl={...f,nom:f.nom.trim(),maj:old.maj||null};delete pl.id;S.form=null;S.editStudent=null;S.students=S.students.map(x=>x.id===sid?{...pl,id:sid}:x);render();
@@ -706,6 +723,7 @@ app.addEventListener("input",ev=>{
   if(k==="deja"){const n=Math.round(Math.max(0,Math.min(604,Number(ev.target.value)||0))*2);S.form.deja=n}
   if(k==="debut"&&ev.target.value)S.form.debut=ev.target.value;
   if(k==="repA"||k==="repB"){const lo=Math.min(S.form.repA||1,S.form.repB||1),hi=Math.max(S.form.repA||1,S.form.repB||1);S.form.repA=lo;S.form.repB=hi;S.form[k]=Number(ev.target.value);render();return}
+  if(k==="dejaF"||k==="dejaS"||k==="dejaA")touch("start");
   if(k==="dejaF"){S.form.deja=BLK[Number(ev.target.value)||0].vs;render();return}
   if(k==="dejaC"){S.form.deja=Number(ev.target.value)||0;refreshFormFooter();return}
   if(k==="dejaS"){const s=Number(ev.target.value);S.form.deja=AYA_START[s];render();return}
