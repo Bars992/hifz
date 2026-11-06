@@ -662,16 +662,17 @@ function allSlots(k){const c=slotCfg(),r=c.jours&&c.jours[parseKey(k).getDay()];
 function isBlocked(k,s){const b=(slotCfg().bloques||{})[k];return b==="all"||(Array.isArray(b)&&b.includes(s))}
 function freeSlots(k){return allSlots(k).filter(s=>!isBlocked(k,s)&&!R.taken.has(k+"|"+s))}
 async function loadResa(){
-  if(!window.SBC||!S.uid)return;const sb=window.SBC,d1=key(today0()),d2=key(addDays(today0(),7));
+  if(!window.SBC||!S.uid)return;const sb=window.SBC,d1=key(today0()),d2=key(addDays(today0(),RESA_DAYS));
   try{
     const m=await sb.from("reservations").select("*").eq("eleve",S.uid).gte("jour",d1).order("jour").order("heure");R.mine=m.data||[];
     const tk=await sb.rpc("creneaux_pris",{d1,d2});R.taken=new Set((tk.data||[]).map(x=>x.jour+"|"+String(x.heure).slice(0,5)));
     if(S.isOwner){const a=await sb.from("reservations").select("*").gte("jour",d1).order("jour").order("heure");R.all=a.data||[]}
   }catch(e){}
 }
+const RESA_DAYS=30;
 let BK=null;
 function sessionLabel(p,e){const parts=[];if(e.learn)parts.push("Apprentissage · "+rangeInfo(p,e.learn).what);if(e.rep)parts.push("Reprise · "+rangeInfo({mode:"aya"},e.rep).what);if(hasRev(e))parts.push("Révision · "+revItems(p,e).map(x=>x.inf.what).join(" puis "));return parts.join(" + ").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim()}
-function bookDays(){const p=S.plan;if(!p)return[];const m=build(p,addDays(today0(),6)),out=[];for(let i=0;i<7;i++){const k=key(addDays(today0(),i)),e=m.get(k);if(e)out.push({k,label:sessionLabel(p,e),kinds:[e.learn?"Apprentissage":null,e.rep?"Reprise":null,hasRev(e)?"Révision":null].filter(Boolean).join(" + ")})}return out}
+function bookDays(){const p=S.plan;if(!p)return[];const m=build(p,addDays(today0(),RESA_DAYS-1)),out=[];for(let i=0;i<RESA_DAYS;i++){const k=key(addDays(today0(),i)),e=m.get(k);if(e)out.push({k,label:sessionLabel(p,e),kinds:[e.learn?"Apprentissage":null,e.rep?"Reprise":null,hasRev(e)?"Révision":null].filter(Boolean).join(" + ")})}return out}
 async function openBook(){BK={days:[],day:null,msg:"",done:null};await loadResa();BK.days=bookDays();const d=BK.days.find(x=>freeSlots(x.k).length);BK.day=d?d.k:(BK.days[0]||{}).k||null;drawBook()}
 function closeBk(){const el=document.getElementById("bk");if(el)el.hidden=true;document.body.style.overflow=""}
 function drawBook(){
@@ -685,7 +686,7 @@ function drawBook(){
     ${wa?`<a class="cbtn wa" style="display:flex;justify-content:center;margin-top:14px;padding:12px" href="https://wa.me/${wa}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" data-bk="close">Prévenir le professeur sur WhatsApp</a>`:""}
     <p class="hint" style="margin:10px 0 0;text-align:center">Le professeur voit aussi la réservation dans son application.</p>
     <button class="mbtn" style="width:100%;margin-top:10px" data-bk="close">Fermer</button></div>`;return}
-  if(!BK.days.length){el.innerHTML=`<div class="bksheet">${head}<p class="hint">Vous n’avez pas de séance dans les 7 prochains jours. Les créneaux sont proposés les jours de vos séances (onglet « Rythme »).</p></div>`;return}
+  if(!BK.days.length){el.innerHTML=`<div class="bksheet">${head}<p class="hint">Vous n’avez pas de séance dans les 30 prochains jours. Les créneaux sont proposés les jours de vos séances (onglet « Rythme »).</p></div>`;return}
   const cur=BK.days.find(x=>x.k===BK.day)||BK.days[0];
   el.innerHTML=`<div class="bksheet" role="dialog" aria-label="Réserver un créneau">${head}
   <p class="hint" style="margin:0 0 10px">Les jours proposés sont ceux de vos séances. 15 minutes par récitation.</p>
@@ -727,16 +728,17 @@ function resaHTML(){
 function slotsAdminHTML(){
   if(!window.SBC)return"";
   const c=slotCfg(),d=S.slotDraft||(S.slotDraft=JSON.parse(JSON.stringify(c.jours||{})));
-  const days=[...Array(7)].map((_,i)=>key(addDays(today0(),i)));
+  const days=[...Array(RESA_DAYS)].map((_,i)=>key(addDays(today0(),i)));if(!S.slDay||!days.includes(S.slDay))S.slDay=days[0];
   if(!S.slotsOpen)return `<button class="cfgline" data-act="slOpen"><span>Mes créneaux de récitation</span><span>${R.all.length} réservation${R.all.length>1?"s":""} à venir ✎</span></button>`;
   const byKey={};R.all.forEach(r=>{byKey[r.jour+"|"+String(r.heure).slice(0,5)]=r});
   return `<section class="form" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;font-size:1.05rem">Mes créneaux de récitation</h3><button class="mbtn" style="margin:0" data-act="slClose">Fermer</button></div>
-  <p class="hint" style="margin:6px 0 14px">Les élèves réservent 15 minutes, au premier arrivé, sur les 7 prochains jours.</p>
+  <p class="hint" style="margin:6px 0 14px">Les élèves réservent 15 minutes, au premier arrivé, jusqu’à un mois à l’avance.</p>
   <div class="field"><span class="lab">Mes horaires habituels</span>${WEEK.map(w=>{const r=d[w];return `<div class="slrow"><button class="chip" data-act="slDay" data-v="${w}" aria-pressed="${!!r}" style="min-width:60px">${DOW_SHORT[w]}</button>${r?`<input type="time" step="900" data-in="slS" data-w="${w}" value="${r[0]}"><span>à</span><input type="time" step="900" data-in="slE" data-w="${w}" value="${r[1]}">`:`<span class="hint" style="margin:0">Pas de récitation</span>`}</div>`}).join("")}
   <button class="primary" style="margin-top:10px" data-act="slSave">Enregistrer mes horaires</button></div>
-  <div class="field"><span class="lab">Les 7 prochains jours</span><p class="hint">Touchez un créneau libre pour le bloquer, ou un créneau bloqué pour le rouvrir.</p>
-  ${days.map(k=>{const sl=allSlots(k);const allB=(c.bloques||{})[k]==="all";return `<div class="slday"><div class="sldh"><strong>${resaDate(k)}</strong><button class="mbtn" style="margin:0" data-act="slBlockDay" data-v="${k}">${allB?"Rouvrir la journée":"Bloquer la journée"}</button></div>
-    <div class="slgrid">${sl.length?sl.map(s=>{const rs=byKey[k+"|"+s];if(rs)return `<span class="sl res" title="${esc(rs.seance||"")}">${fmtH(s)} · ${esc(rs.nom||"Élève")}</span>`;const bl=isBlocked(k,s);return `<button class="sl${bl?" blk":""}" data-act="slBlock" data-v="${k}|${s}">${fmtH(s)}</button>`}).join(""):`<span class="hint" style="margin:0">Aucun horaire ce jour-là.</span>`}</div></div>`}).join("")}</div>
+  <div class="field"><span class="lab">Les 30 prochains jours</span><p class="hint">Choisissez un jour, puis touchez un créneau libre pour le bloquer, ou un créneau bloqué pour le rouvrir.</p>
+  <div class="bkdays">${days.map(k=>{const d=parseKey(k),allB=(c.bloques||{})[k]==="all",nr=R.all.filter(r=>r.jour===k).length;return `<button data-act="slPick" data-v="${k}" aria-pressed="${k===S.slDay}"><span>${fmtDate(d,{weekday:"short"})}</span><b>${d.getDate()}</b><small>${allB?"fermé":nr?nr+" résa":fmtDate(d,{month:"short"})}</small></button>`}).join("")}</div>
+  ${[S.slDay].map(k=>{const sl=allSlots(k);const allB=(c.bloques||{})[k]==="all";return `<div class="slday"><div class="sldh"><strong>${resaDate(k)}</strong><button class="mbtn" style="margin:0" data-act="slBlockDay" data-v="${k}">${allB?"Rouvrir la journée":"Bloquer la journée"}</button></div>
+    <div class="slgrid">${allB?`<span class="hint" style="margin:0">Journée fermée.</span>`:sl.length?sl.map(s=>{const rs=byKey[k+"|"+s];if(rs)return `<span class="sl res" title="${esc(rs.seance||"")}">${fmtH(s)} · ${esc(rs.nom||"Élève")}</span>`;const bl=isBlocked(k,s);return `<button class="sl${bl?" blk":""}" data-act="slBlock" data-v="${k}|${s}">${fmtH(s)}</button>`}).join(""):`<span class="hint" style="margin:0">Aucun horaire ce jour-là.</span>`}</div></div>`}).join("")}</div>
   ${R.all.length?`<div class="field"><span class="lab">Réservations à venir</span>${R.all.map(r=>`<div class="resa"><div class="grow"><strong>${esc(r.nom||"Élève")} · ${resaDate(r.jour)} à ${fmtH(r.heure)}</strong><div class="hint" style="margin:2px 0 0">${esc(r.seance||"")}</div></div><button class="rbtn" data-act="resaDel" data-v="${esc(r.id)}">Annuler</button></div>`).join("")}</div>`:""}
   </section>`;
 }
@@ -810,6 +812,7 @@ app.addEventListener("click",async ev=>{
     case"resaDel":{if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="Confirmer l’annulation";return}const r=await window.SBC.from("reservations").delete().eq("id",v);if(r.error){S.note="Erreur : "+r.error.message}await loadResa();render();return}
     case"slOpen":S.slotsOpen=true;S.slotDraft=null;await loadResa();break;
     case"slClose":S.slotsOpen=false;break;
+    case"slPick":S.slDay=v;break;
     case"slDay":{const w=Number(v);const d=S.slotDraft;if(d[w])delete d[w];else d[w]=["18:00","20:00"];break}
     case"slSave":{const c={...slotCfg(),jours:JSON.parse(JSON.stringify(S.slotDraft))};await saveSlotCfg(c);S.note="Horaires enregistrés.";render();return}
     case"slBlock":{const[k,s]=v.split("|");const c=JSON.parse(JSON.stringify(slotCfg()));c.bloques=c.bloques||{};let a=c.bloques[k];if(a==="all")a=allSlots(k).slice();a=Array.isArray(a)?a:[];c.bloques[k]=a.includes(s)?a.filter(x=>x!==s):[...a,s];if(!c.bloques[k].length)delete c.bloques[k];await saveSlotCfg(c);return}
