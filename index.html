@@ -182,6 +182,32 @@ input[type=text],input[type=number],input[type=date],select{width:100%;font:inhe
 .ftag{display:inline-block;font-size:.72rem;font-weight:600;border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:2px}
 .ftodo .ftag{background:var(--gold);color:#fff}
 .fdone .ftag{background:var(--learn-soft);color:var(--learn)}
+.cbtn.bk{background:var(--gold);color:#fff;border:0;font:inherit;font-size:.82rem;font-weight:500}
+.bkveil{position:fixed;inset:0;z-index:55;background:rgba(10,20,16,.45);display:flex;align-items:flex-end;justify-content:center}
+.bkveil[hidden]{display:none}
+.bksheet{background:var(--surface);color:var(--ink);width:min(560px,100%);max-height:88vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.bkhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bkx{border:0;background:var(--bg);border-radius:999px;width:36px;height:36px}
+.bkdays{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.bkdays button{flex:none;width:68px;border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.bkdays button b{font-size:1.2rem}.bkdays button small{font-size:.68rem;color:var(--muted)}
+.bkdays button[aria-pressed="true"]{background:var(--teal);color:var(--teal-ink);border-color:var(--teal)}
+.bkdays button[aria-pressed="true"] small{color:inherit}
+.bkdays button:disabled{opacity:.4}
+.bkslots{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
+.bkslots button{border:1px solid var(--teal);background:var(--surface);color:var(--teal);border-radius:12px;padding:10px 0;font-weight:600}
+.resabox{background:var(--surface);border:1.5px solid var(--gold);border-radius:18px;padding:12px 14px;margin-bottom:14px}
+.resabox h3{margin:0 0 4px;font-size:1rem}
+.resa{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.resa .grow{flex:1;min-width:0}.rbtns{display:flex;gap:6px;flex:none;align-items:center}.resa .rbtn{margin-top:0}
+.slrow{display:flex;align-items:center;gap:8px;margin:6px 0}
+.slrow input{width:auto;padding:6px 8px}
+.slday{border-top:1px solid var(--line);padding:10px 0}
+.sldh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:.9rem}
+.slgrid{display:flex;flex-wrap:wrap;gap:6px}
+.sl{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;font-size:.8rem}
+.sl.blk{background:var(--warn-soft);border-color:var(--warn);color:var(--warn);text-decoration:line-through}
+.sl.res{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:500}
 .login input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .logout{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 10px;font-size:.75rem;margin-left:6px;vertical-align:1px}
 .login{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 16px;margin-top:8px}
@@ -470,7 +496,7 @@ function render(){
   if(S.tab==="eleves"&&S.isOwner) h+=S.viewing?studentDetail():studentsList();
   else if(S.tab==="reprise") h+=repTabHTML();
   else if(!S.plan||S.tab==="reglages") h+=formHTML();
-  else h+=nextHTML(S.plan)+progHTML(S.plan,S.val)+calHTML(S.plan,false,S.val,false);
+  else h+=resaHTML()+nextHTML(S.plan)+progHTML(S.plan,S.val)+calHTML(S.plan,false,S.val,false);
   app.innerHTML=h;
 }
 function progHTML(p,val){
@@ -541,7 +567,7 @@ function taskHTML(c,kind,what,surah,done,ro,valid,teacher,msg,redo){
   const act=c==="l"?"a":c==="p"?"p":"r";
   const st=valid?`<div class="vstat ok">✓ Validé par le professeur</div>`:teacher?`<div class="vstat">${done?"L’élève indique l’avoir fait : à vérifier":"L’élève ne l’a pas encore marqué comme fait"}</div>`:done?`<div class="vstat wait">En attente de validation par le professeur</div>`:"";
   const wa=(S.cfg.whatsapp||"").replace(/\D/g,"").replace(/^00/,""), zm=/^https:\/\//.test(S.cfg.zoom||"")?S.cfg.zoom:"";
-  const contact=(!teacher&&!ro&&done&&!valid&&(wa||zm))?`<div class="contact">${wa?`<a class="cbtn wa" href="https://wa.me/${wa}?text=${encodeURIComponent(msg||"")}" target="_blank" rel="noopener">Prévenir le professeur sur WhatsApp</a>`:""}${zm?`<a class="cbtn zm" href="${esc(zm)}" target="_blank" rel="noopener">Rejoindre la récitation (Zoom)</a>`:""}</div>`:"";
+  const bkb=window.SBC?`<button class="cbtn bk" data-act="book" data-v="${esc(kind+" · "+String(what).replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim())}">Réserver un créneau de récitation</button>`:"";const contact=(!teacher&&!ro&&done&&!valid&&(wa||zm||bkb))?`<div class="contact">${bkb}${wa?`<a class="cbtn wa" href="https://wa.me/${wa}?text=${encodeURIComponent(msg||"")}" target="_blank" rel="noopener">Prévenir le professeur sur WhatsApp</a>`:""}${zm?`<a class="cbtn zm" href="${esc(zm)}" target="_blank" rel="noopener">Rejoindre la récitation (Zoom)</a>`:""}</div>`:"";
   const rid=teacher?`${S.viewing}|${S.sel}|${act}`:"";
   surah+=`</div>${redo||""}${redo&&!teacher?"":st}${contact}${teacher&&!valid?(S.redoAsk===rid?redoAskHTML(rid):`<button class="rbtn" data-act="refaire" data-v="${esc(rid)}">À refaire</button>`):""}<div><button class="mbtn" data-act="mushaf" data-v="${c}">Voir dans le mushaf</button>`;
   const right=teacher?`<button class="vbtn${valid?" on":""}" data-act="valider" data-v="${act}" aria-pressed="${!!valid}">${valid?"Validé ✓":"Valider"}</button>`
@@ -615,6 +641,73 @@ const isNewForm=()=>!S.plan&&!S.editStudent&&S.tab!=="reprise";
 const fcls=k=>isNewForm()?((S.touched||{})[k]?" fdone":" ftodo"):"";
 const ftag=k=>isNewForm()?`<span class="ftag">${(S.touched||{})[k]?"✓ Choisi":"À choisir"}</span>`:"";
 function touch(k,el){S.touched=S.touched||{};if(S.touched[k])return;S.touched[k]=true;if(el){const fd=el.closest(".field");if(fd){fd.classList.remove("ftodo");fd.classList.add("fdone");const tg=fd.querySelector(".ftag");if(tg)tg.textContent="✓ Choisi"}}}
+/* ====== Créneaux de récitation (version Supabase) ====== */
+const R={mine:[],all:[],taken:new Set()};
+const SLOT_DEF={jours:{1:["18:00","20:00"],2:["18:00","20:00"],3:["18:00","20:00"],4:["18:00","20:00"],5:["18:00","20:00"]},bloques:{}};
+const slotCfg=()=>S.slotCfg||SLOT_DEF;
+const hm=s=>{const[a,b]=String(s).split(":").map(Number);return a*60+b};
+const fmtH=s=>String(s).slice(0,5).replace(":","h");
+const resaDate=k=>fmtDate(parseKey(k),{weekday:"long",day:"numeric",month:"long"});
+function allSlots(k){const c=slotCfg(),r=c.jours&&c.jours[parseKey(k).getDay()];if(!r)return[];const out=[];for(let m=hm(r[0]);m+15<=hm(r[1]);m+=15)out.push(pad(Math.floor(m/60))+":"+pad(m%60));
+  if(k===key(today0())){const n=new Date(),nm=n.getHours()*60+n.getMinutes();return out.filter(s=>hm(s)>nm)}return out}
+function isBlocked(k,s){const b=(slotCfg().bloques||{})[k];return b==="all"||(Array.isArray(b)&&b.includes(s))}
+function freeSlots(k){return allSlots(k).filter(s=>!isBlocked(k,s)&&!R.taken.has(k+"|"+s))}
+async function loadResa(){
+  if(!window.SBC||!S.uid)return;const sb=window.SBC,d1=key(today0()),d2=key(addDays(today0(),7));
+  try{
+    const m=await sb.from("reservations").select("*").eq("eleve",S.uid).gte("jour",d1).order("jour").order("heure");R.mine=m.data||[];
+    const tk=await sb.rpc("creneaux_pris",{d1,d2});R.taken=new Set((tk.data||[]).map(x=>x.jour+"|"+String(x.heure).slice(0,5)));
+    if(S.isOwner){const a=await sb.from("reservations").select("*").gte("jour",d1).order("jour").order("heure");R.all=a.data||[]}
+  }catch(e){}
+}
+let BK=null;
+async function openBook(label){BK={label,day:null,msg:""};await loadResa();const d=[...Array(7)].map((_,i)=>key(addDays(today0(),i))).find(k=>freeSlots(k).length);BK.day=d||key(today0());drawBook()}
+function closeBk(){const el=document.getElementById("bk");if(el)el.hidden=true;document.body.style.overflow=""}
+function drawBook(){
+  let el=document.getElementById("bk");
+  if(!el){el=document.createElement("div");el.id="bk";el.className="bkveil";document.body.appendChild(el);el.addEventListener("click",bkClick)}
+  const days=[...Array(7)].map((_,i)=>key(addDays(today0(),i)));
+  el.hidden=false;document.body.style.overflow="hidden";
+  el.innerHTML=`<div class="bksheet" role="dialog" aria-label="Réserver un créneau"><div class="bkhead"><strong>Réserver un créneau de récitation</strong><button class="bkx" data-bk="close" aria-label="Fermer">✕</button></div>
+  <p class="hint" style="margin:0 0 10px">${esc(BK.label)} · 15 minutes</p>
+  <div class="bkdays">${days.map(k=>{const n=freeSlots(k).length,d=parseKey(k);return `<button data-bk="day" data-v="${k}" aria-pressed="${k===BK.day}"${n?"":" disabled"}><span>${fmtDate(d,{weekday:"short"})}</span><b>${d.getDate()}</b><small>${n?n+" libre"+(n>1?"s":""):"complet"}</small></button>`}).join("")}</div>
+  <p style="margin:14px 0 8px;font-weight:500">${resaDate(BK.day)}</p>
+  <div class="bkslots">${freeSlots(BK.day).map(s=>`<button data-bk="pick" data-v="${s}">${fmtH(s)}</button>`).join("")||`<p class="hint">Aucun créneau libre ce jour-là.</p>`}</div>
+  ${BK.msg?`<p class="err" style="margin:12px 0 0">${BK.msg}</p>`:""}</div>`;
+}
+async function bkClick(ev){
+  if(ev.target.id==="bk"){closeBk();return}
+  const b=ev.target.closest("[data-bk]");if(!b)return;const a=b.dataset.bk,v=b.dataset.v;
+  if(a==="close")closeBk();
+  else if(a==="day"){BK.day=v;BK.msg="";drawBook()}
+  else if(a==="pick"){
+    b.disabled=true;const r=await window.SBC.from("reservations").insert({jour:BK.day,heure:v,nom:(S.plan&&S.plan.nom)||"",seance:BK.label});
+    if(r.error){BK.msg=/duplicate|unique|23505/i.test((r.error.message||"")+(r.error.code||""))?"Ce créneau vient d’être pris : choisissez-en un autre.":"Erreur : "+r.error.message;await loadResa();drawBook();return}
+    closeBk();await loadResa();S.note=`Récitation réservée : ${resaDate(BK.day)} à ${fmtH(v)}.`;render();scrollTo({top:0,behavior:"smooth"})}
+}
+function resaHTML(){
+  if(!window.SBC||!R.mine.length)return"";
+  const zm=/^https:\/\//.test(S.cfg.zoom||"")?S.cfg.zoom:"";
+  return `<section class="resabox"><h3>Mes récitations</h3>${R.mine.map(r=>`<div class="resa"><div class="grow"><strong>${resaDate(r.jour)} à ${fmtH(r.heure)}</strong><div class="hint" style="margin:2px 0 0">${esc(r.seance||"")}</div></div><div class="rbtns">${zm?`<a class="cbtn zm" href="${esc(zm)}" target="_blank" rel="noopener">Zoom</a>`:""}<button class="rbtn" data-act="resaDel" data-v="${esc(r.id)}">Annuler</button></div></div>`).join("")}</section>`;
+}
+function slotsAdminHTML(){
+  if(!window.SBC)return"";
+  const c=slotCfg(),d=S.slotDraft||(S.slotDraft=JSON.parse(JSON.stringify(c.jours||{})));
+  const days=[...Array(7)].map((_,i)=>key(addDays(today0(),i)));
+  if(!S.slotsOpen)return `<button class="cfgline" data-act="slOpen"><span>Mes créneaux de récitation</span><span>${R.all.length} réservation${R.all.length>1?"s":""} à venir ✎</span></button>`;
+  const byKey={};R.all.forEach(r=>{byKey[r.jour+"|"+String(r.heure).slice(0,5)]=r});
+  return `<section class="form" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;font-size:1.05rem">Mes créneaux de récitation</h3><button class="mbtn" style="margin:0" data-act="slClose">Fermer</button></div>
+  <p class="hint" style="margin:6px 0 14px">Les élèves réservent 15 minutes, au premier arrivé, sur les 7 prochains jours.</p>
+  <div class="field"><span class="lab">Mes horaires habituels</span>${WEEK.map(w=>{const r=d[w];return `<div class="slrow"><button class="chip" data-act="slDay" data-v="${w}" aria-pressed="${!!r}" style="min-width:60px">${DOW_SHORT[w]}</button>${r?`<input type="time" step="900" data-in="slS" data-w="${w}" value="${r[0]}"><span>à</span><input type="time" step="900" data-in="slE" data-w="${w}" value="${r[1]}">`:`<span class="hint" style="margin:0">Pas de récitation</span>`}</div>`}).join("")}
+  <button class="primary" style="margin-top:10px" data-act="slSave">Enregistrer mes horaires</button></div>
+  <div class="field"><span class="lab">Les 7 prochains jours</span><p class="hint">Touchez un créneau libre pour le bloquer, ou un créneau bloqué pour le rouvrir.</p>
+  ${days.map(k=>{const sl=allSlots(k);const allB=(c.bloques||{})[k]==="all";return `<div class="slday"><div class="sldh"><strong>${resaDate(k)}</strong><button class="mbtn" style="margin:0" data-act="slBlockDay" data-v="${k}">${allB?"Rouvrir la journée":"Bloquer la journée"}</button></div>
+    <div class="slgrid">${sl.length?sl.map(s=>{const rs=byKey[k+"|"+s];if(rs)return `<span class="sl res" title="${esc(rs.seance||"")}">${fmtH(s)} · ${esc(rs.nom||"Élève")}</span>`;const bl=isBlocked(k,s);return `<button class="sl${bl?" blk":""}" data-act="slBlock" data-v="${k}|${s}">${fmtH(s)}</button>`}).join(""):`<span class="hint" style="margin:0">Aucun horaire ce jour-là.</span>`}</div></div>`}).join("")}</div>
+  ${R.all.length?`<div class="field"><span class="lab">Réservations à venir</span>${R.all.map(r=>`<div class="resa"><div class="grow"><strong>${esc(r.nom||"Élève")} · ${resaDate(r.jour)} à ${fmtH(r.heure)}</strong><div class="hint" style="margin:2px 0 0">${esc(r.seance||"")}</div></div><button class="rbtn" data-act="resaDel" data-v="${esc(r.id)}">Annuler</button></div>`).join("")}</div>`:""}
+  </section>`;
+}
+async function saveSlotCfg(c){S.slotCfg=c;render();try{await S.db.doc("config/creneaux").set(c)}catch(e){S.note="Les créneaux n’ont pas pu être enregistrés.";render()}}
+/* ======================================================= */
 function previewHTML(f){
   let h="";try{const a=Math.min(f.deja||0,TOTAL_AYA-1),b=Math.min(learnStep(f,a),TOTAL_AYA);const r=rangeInfo(f,[a,b]);
   h=`Première séance : <strong>${r.what}</strong>, ${r.surah.replace(/<span class="ar"[^>]*>[^<]*<\/span>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").replace(/^ ?/,"")}`}catch(e){}
@@ -645,6 +738,7 @@ function studentsList(){
   let h=cfgOpen?`<section class="form" style="margin-bottom:16px"><div class="field"><label for="cfgW">Votre numéro WhatsApp de professeur</label><p class="hint">Le numéro sur lequel les élèves vous préviennent. À remplir une seule fois, par vous. Format international, sans + ni espaces. Exemple pour la France : 33612345678.</p><input id="cfgW" type="text" inputmode="tel" data-in="cfgW" value="${esc(cd.whatsapp)}" placeholder="33612345678"></div>
   <div class="field"><label for="cfgZ">Votre lien Zoom de professeur</label><p class="hint">Le lien de votre réunion Zoom, où les élèves viennent réciter.</p><input id="cfgZ" type="text" inputmode="url" data-in="cfgZ" value="${esc(cd.zoom)}" placeholder="https://zoom.us/j/…"></div>
   <button class="primary" data-act="savecfg">${S.cfgSaved?"Enregistré ✓":"Enregistrer"}</button>${S.cfgSaved?`<p class="hint" style="margin:10px 0 0;color:var(--learn);font-weight:500">C’est enregistré. Les élèves verront vos boutons WhatsApp et Zoom.</p>`:""}<p class="hint" style="margin:10px 0 0">Les élèves n’ont rien à remplir : ils verront les boutons « Prévenir le professeur sur WhatsApp » et « Rejoindre la récitation (Zoom) » après avoir coché une séance.</p></section>`:`<button class="cfgline" data-act="cfgopen"><span>Réglages WhatsApp / Zoom</span><span>${S.cfg.whatsapp?"WhatsApp ✓":"WhatsApp —"} · ${S.cfg.zoom?"Zoom ✓":"Zoom —"} ✎</span></button>`;
+  h+=slotsAdminHTML();
   h+=pendingHTML(list);
   h+=`<p class="note">Partagez cette page avec vos élèves en accès Contributeur : chacun crée son programme, et leur progression apparaît ici.</p>`;
   if(!list.length)return h+`<p class="empty">Aucun élève n’a encore créé son programme.</p>`;
@@ -664,7 +758,7 @@ function studentDetail(){
 }
 
 /* Interactions */
-app.addEventListener("click",ev=>{
+app.addEventListener("click",async ev=>{
   const b=ev.target.closest("[data-act]"); if(!b)return;
   const act=b.dataset.act, v=b.dataset.v, f=S.form;
   switch(act){
@@ -677,6 +771,14 @@ app.addEventListener("click",ev=>{
     case"refaireOk":{const[sid,k,a]=v.split("|");if(!S.db)return;S.redoAsk=null;const all={...(S.vals[sid]||{})};const cur={...(all[k]||{})};cur[a]=false;cur["x"+a]=true;cur.note=(S.redoNote||"").trim();cur.at=Date.now();all[k]=cur;S.vals[sid]=all;
       let stu=null;if(a==="r"){stu=S.students.find(x=>x.id===sid);if(stu){const fa={...(stu.faits||{})};fa[k]={...(fa[k]||{}),r:false};stu.faits=fa}}
       render();writeChain=writeChain.then(()=>S.db.doc("validations/"+sid).set(all)).then(()=>stu?S.db.doc("eleves/"+sid).update({faits:stu.faits}):null).catch(()=>{S.note="« À refaire » n’a pas pu être enregistré. Réessayez.";render()});return}
+    case"book":openBook(v);return;
+    case"resaDel":{if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="Confirmer l’annulation";return}const r=await window.SBC.from("reservations").delete().eq("id",v);if(r.error){S.note="Erreur : "+r.error.message}await loadResa();render();return}
+    case"slOpen":S.slotsOpen=true;S.slotDraft=null;await loadResa();break;
+    case"slClose":S.slotsOpen=false;break;
+    case"slDay":{const w=Number(v);const d=S.slotDraft;if(d[w])delete d[w];else d[w]=["18:00","20:00"];break}
+    case"slSave":{const c={...slotCfg(),jours:JSON.parse(JSON.stringify(S.slotDraft))};await saveSlotCfg(c);S.note="Horaires enregistrés.";render();return}
+    case"slBlock":{const[k,s]=v.split("|");const c=JSON.parse(JSON.stringify(slotCfg()));c.bloques=c.bloques||{};let a=c.bloques[k];if(a==="all")a=allSlots(k).slice();a=Array.isArray(a)?a:[];c.bloques[k]=a.includes(s)?a.filter(x=>x!==s):[...a,s];if(!c.bloques[k].length)delete c.bloques[k];await saveSlotCfg(c);return}
+    case"slBlockDay":{const c=JSON.parse(JSON.stringify(slotCfg()));c.bloques=c.bloques||{};if(c.bloques[v]==="all")delete c.bloques[v];else c.bloques[v]="all";await saveSlotCfg(c);return}
     case"logout":window.SBC.auth.signOut().then(()=>location.reload());return;
     case"cfgopen":S.cfgOpen=true;break;
     case"valq":{const[sid,k,a]=v.split("|");if(!S.db)return;const all={...(S.vals[sid]||{})};const cur={...(all[k]||{})};cur[a]=true;cur["x"+a]=false;cur.at=Date.now();all[k]=cur;S.vals[sid]=all;render();
@@ -716,6 +818,7 @@ app.addEventListener("click",ev=>{
 });
 app.addEventListener("input",ev=>{
   const k=ev.target.dataset.in;
+  if(k==="slS"||k==="slE"){const w=Number(ev.target.dataset.w);if(S.slotDraft&&S.slotDraft[w])S.slotDraft[w][k==="slS"?0:1]=ev.target.value;return}
   if(k==="redoNote"){S.redoNote=ev.target.value;return}
   if(k==="cfgW"||k==="cfgZ"){S.cfgDraft=S.cfgDraft||{};S.cfgDraft[k==="cfgW"?"whatsapp":"zoom"]=ev.target.value;if(S.cfgSaved){S.cfgSaved=false;const b=app.querySelector('[data-act="savecfg"]');if(b){b.textContent="Enregistrer";const n=b.nextElementSibling;if(n&&n.style.fontWeight)n.remove()}}return}
   if(!k||!S.form)return;
@@ -802,6 +905,8 @@ function startLocal(msg){
     S.plan=snap.exists?snap.data():null;S.loaded=true;render();
   },()=>{clearTimeout(timer);S.note="Impossible de charger votre programme.";S.loaded=true;render()});
   db.doc("config/prof").onSnapshot(snap=>{S.cfg=snap.exists?snap.data():{};render()},()=>{});
+  db.doc("config/creneaux").onSnapshot(snap=>{S.slotCfg=snap.exists?snap.data():null;render()},()=>{});
+  if(window.SBC){loadResa().then(render);setInterval(()=>loadResa().then(()=>{if(!document.getElementById("bk")||document.getElementById("bk").hidden)render()}),60000)}
   db.doc("validations/"+uid).onSnapshot(snap=>{S.val=snap.exists?snap.data():{};render()},()=>{});
   if(S.isOwner){
     db.collection("validations").onSnapshot(qs=>{const m={};qs.docs.forEach(d=>{m[d.id]=d.data()});S.vals=m;if(S.tab==="eleves")render()},()=>{});
