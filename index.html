@@ -208,6 +208,9 @@ input[type=text],input[type=number],input[type=date],select{width:100%;font:inhe
 .sl{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;font-size:.8rem}
 .sl.blk{background:var(--warn-soft);border-color:var(--warn);color:var(--warn);text-decoration:line-through}
 .sl.res{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:500}
+.calbk{display:block;width:100%;margin:14px 0 0;border:0;border-radius:999px;padding:12px 14px;background:var(--gold);color:#fff;font-weight:600;font-size:.95rem}
+.calnext{margin:8px 0 0;text-align:center;font-size:.85rem;color:var(--muted)}
+.calnext strong{color:var(--ink);font-weight:600}
 .login input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .logout{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 10px;font-size:.75rem;margin-left:6px;vertical-align:1px}
 .login{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 16px;margin-top:8px}
@@ -540,7 +543,7 @@ function calHTML(p,ro,val,teacher){
   }
   const title=first.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
   let out=`<section class="cal"><div class="cal-head"><button data-act="month" data-v="-1" aria-label="Mois précédent">‹</button><h2>${title}</h2><button data-act="month" data-v="1" aria-label="Mois suivant">›</button></div><div class="grid">${g}</div>
-  <div class="legend"><span><span class="m l"></span>Apprentissage</span><span><span class="m r"></span>Révision</span>${isRep(p)?`<span><span class="m p"></span>Reprise</span>`:""}<span><span class="m l done"></span><span class="m r done"></span>Fait, à valider</span><span><span class="m val"></span>Validé</span><span><span class="m miss"></span>Non fait</span></div></section>`;
+  <div class="legend"><span><span class="m l"></span>Apprentissage</span><span><span class="m r"></span>Révision</span>${isRep(p)?`<span><span class="m p"></span>Reprise</span>`:""}<span><span class="m l done"></span><span class="m r done"></span>Fait, à valider</span><span><span class="m val"></span>Validé</span><span><span class="m miss"></span>Non fait</span></div>${(!ro&&!teacher)?calBookHTML(p):""}</section>`;
   // détail du jour sélectionné
   const sd=parseKey(S.sel), e=build(p,sd).get(S.sel), f=faits[S.sel]||{}, vv=val[S.sel]||{};
   const plain=h=>h.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
@@ -567,7 +570,7 @@ function taskHTML(c,kind,what,surah,done,ro,valid,teacher,msg,redo){
   const act=c==="l"?"a":c==="p"?"p":"r";
   const st=valid?`<div class="vstat ok">✓ Validé par le professeur</div>`:teacher?`<div class="vstat">${done?"L’élève indique l’avoir fait : à vérifier":"L’élève ne l’a pas encore marqué comme fait"}</div>`:done?`<div class="vstat wait">En attente de validation par le professeur</div>`:"";
   const wa=(S.cfg.whatsapp||"").replace(/\D/g,"").replace(/^00/,""), zm=/^https:\/\//.test(S.cfg.zoom||"")?S.cfg.zoom:"";
-  const bkb=window.SBC?`<button class="cbtn bk" data-act="book" data-v="${esc(kind+" · "+String(what).replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim())}">Réserver un créneau de récitation</button>`:"";const contact=(!teacher&&!ro&&done&&!valid&&(wa||zm||bkb))?`<div class="contact">${bkb}${wa?`<a class="cbtn wa" href="https://wa.me/${wa}?text=${encodeURIComponent(msg||"")}" target="_blank" rel="noopener">Prévenir le professeur sur WhatsApp</a>`:""}${zm?`<a class="cbtn zm" href="${esc(zm)}" target="_blank" rel="noopener">Rejoindre la récitation (Zoom)</a>`:""}</div>`:"";
+  const bkb=window.SBC?`<button class="cbtn bk" data-act="book" data-v="${esc(kind+" · "+String(what).replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim())}">Réserver un créneau de récitation</button>`:"";const contact=(!teacher&&!ro&&done&&!valid&&(wa||zm))?`<div class="contact">${wa?`<a class="cbtn wa" href="https://wa.me/${wa}?text=${encodeURIComponent(msg||"")}" target="_blank" rel="noopener">Prévenir le professeur sur WhatsApp</a>`:""}${zm?`<a class="cbtn zm" href="${esc(zm)}" target="_blank" rel="noopener">Rejoindre la récitation (Zoom)</a>`:""}</div>`:"";
   const rid=teacher?`${S.viewing}|${S.sel}|${act}`:"";
   surah+=`</div>${redo||""}${redo&&!teacher?"":st}${contact}${teacher&&!valid?(S.redoAsk===rid?redoAskHTML(rid):`<button class="rbtn" data-act="refaire" data-v="${esc(rid)}">À refaire</button>`):""}<div><button class="mbtn" data-act="mushaf" data-v="${c}">Voir dans le mushaf</button>`;
   const right=teacher?`<button class="vbtn${valid?" on":""}" data-act="valider" data-v="${act}" aria-pressed="${!!valid}">${valid?"Validé ✓":"Valider"}</button>`
@@ -643,7 +646,7 @@ const ftag=k=>isNewForm()?`<span class="ftag">${(S.touched||{})[k]?"✓ Choisi":
 function touch(k,el){S.touched=S.touched||{};if(S.touched[k])return;S.touched[k]=true;if(el){const fd=el.closest(".field");if(fd){fd.classList.remove("ftodo");fd.classList.add("fdone");const tg=fd.querySelector(".ftag");if(tg)tg.textContent="✓ Choisi"}}}
 /* ====== Créneaux de récitation (version Supabase) ====== */
 const R={mine:[],all:[],taken:new Set()};
-const SLOT_DEF={jours:{1:["18:00","20:00"],2:["18:00","20:00"],3:["18:00","20:00"],4:["18:00","20:00"],5:["18:00","20:00"]},bloques:{}};
+const SLOT_DEF={jours:{0:["18:00","22:30"],1:["18:00","22:30"],2:["18:00","22:30"],3:["18:00","22:30"],4:["18:00","22:30"],5:["18:00","22:30"],6:["18:00","22:30"]},bloques:{}};
 const slotCfg=()=>S.slotCfg||SLOT_DEF;
 const hm=s=>{const[a,b]=String(s).split(":").map(Number);return a*60+b};
 const fmtH=s=>String(s).slice(0,5).replace(":","h");
@@ -684,6 +687,14 @@ async function bkClick(ev){
     b.disabled=true;const r=await window.SBC.from("reservations").insert({jour:BK.day,heure:v,nom:(S.plan&&S.plan.nom)||"",seance:BK.label});
     if(r.error){BK.msg=/duplicate|unique|23505/i.test((r.error.message||"")+(r.error.code||""))?"Ce créneau vient d’être pris : choisissez-en un autre.":"Erreur : "+r.error.message;await loadResa();drawBook();return}
     closeBk();await loadResa();S.note=`Récitation réservée : ${resaDate(BK.day)} à ${fmtH(v)}.`;render();scrollTo({top:0,behavior:"smooth"})}
+}
+function calBookHTML(p){
+  if(!window.SBC)return"";
+  const ns=nextSession(p);let label="Récitation";
+  if(ns){const f=(p.faits||{})[ns.k]||{},parts=[];if(ns.e.learn)parts.push("Apprentissage · "+rangeInfo(p,ns.e.learn).what);if(ns.e.rep)parts.push("Reprise · "+rangeInfo({mode:"aya"},ns.e.rep).what);if(hasRev(ns.e))parts.push("Révision · "+revItems(p,ns.e).map(x=>x.inf.what).join(" puis "));label=parts.join(" + ").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim()||label}
+  const m=R.mine[0];
+  return `<button class="calbk" data-act="book" data-v="${esc(label)}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="vertical-align:-4px;margin-right:6px"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M12 14v3l2 1"/></svg>Réserver un créneau de récitation</button>
+  <p class="calnext">${m?`Ma prochaine récitation : <strong>${resaDate(m.jour)} à ${fmtH(m.heure)}</strong>`:"Aucune récitation réservée pour l’instant."}</p>`;
 }
 function resaHTML(){
   if(!window.SBC||!R.mine.length)return"";
