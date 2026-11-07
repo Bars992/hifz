@@ -608,7 +608,7 @@ function formHTML(){
   if(!S.form){const src=S.editStudent?S.students.find(x=>x.id===S.editStudent):S.plan;S.form=src?JSON.parse(JSON.stringify(src)):defaults();delete S.form.id;S.form.joursRev=joursRevOf(S.form);delete S.form.revFreq;delete S.form.revJour;if(isCourt(S.form)){S.form.mode="aya";S.form.deja=0;S.form.qte="p1";S.form.revQte="q2"}if(!isAya(S.form)){const mp={10:"q2",20:"q4",40:"q8"};S.form.mode="aya";S.form.deja=PAGE_H[S.form.deja]||0;S.form.qte="p"+S.form.qte;S.form.revQte=mp[S.form.revQte]||"p"+S.form.revQte}else{if(typeof S.form.qte==="number"||S.form.qte[0]==="v")S.form.qte="p1";if(typeof S.form.revQte==="number"||S.form.revQte[0]==="v")S.form.revQte="q2"}}
   const f=S.form, chip=(act,v,l,on)=>`<button class="chip" data-act="${act}" data-v="${v}" aria-pressed="${on}">${l}</button>`;
   const fin=finEstimee(f);
-  const miss=isNewForm()?TODO_KEYS.filter(([k])=>!(S.touched||{})[k]).map(x=>x[1]):[];const ok=f.nom.trim()&&f.joursApp.length&&!miss.length;
+  const miss=isNewForm()?TODO_KEYS.filter(([k])=>!(S.touched||{})[k]).map(x=>x[1]):(f.revQte==="hz"?["la quantité à réviser"]:[]);const ok=f.nom.trim()&&f.joursApp.length&&!miss.length;
   return `<section class="form">
   ${S.plan||S.editStudent?"":`<p class="hint" style="margin-bottom:16px">Choisissez votre rythme : le calendrier vous dira chaque jour quoi apprendre et quoi réviser.</p>`}
   <div class="field"><label for="nom">Prénom</label><input id="nom" type="text" data-in="nom" value="${esc(f.nom)}" autocomplete="given-name" placeholder="Votre prénom"></div>
@@ -618,8 +618,7 @@ function formHTML(){
   ${isFin(f)?finStartHTML(f):isCourt(f)?courtStartHTML(f):isAya(f)?dejaAyaHTML(f):`<div class="field"><label for="deja">Pages déjà mémorisées</label><p class="hint">À partir du début du Coran. Laissez 0 si vous commencez.</p><input id="deja" type="number" min="0" max="604" step="0.5" data-in="deja" value="${f.deja/2}"></div>`}
   <div class="field${fcls("qte")}"><span class="lab">Quantité à apprendre par séance${ftag("qte")}</span>${isAya(f)?`<p class="hint">L’application calcule elle-même de quelle aya à quelle aya, d’après le mushaf de Médine.</p>`:""}<div class="chips">${qteList(f).map(([v,l])=>chip("qte",v,l,f.qte===v)).join("")}</div></div>
   <div class="field${fcls("jours")}"><span class="lab">Jours d’apprentissage${ftag("jours")}</span><div class="chips days">${WEEK.map(w=>chip("jour",w,DOW_SHORT[w],f.joursApp.includes(w))).join("")}</div></div>
-  <div class="field${fcls("rev")}"><span class="lab">Quantité à réviser par séance${ftag("rev")}</span><p class="hint">La révision reprend ce qui a été appris depuis le début du programme, puis recommence.</p><div class="chips">${revList(f).map(([v,l])=>chip("revq",v,l,f.revQte===v)).join("")}</div>${f.revQte==="hz"?`<p class="hint" style="margin-top:8px">Les jours de révision, l’élève reprend toujours depuis le début du hizb qu’il est en train d’apprendre, jusqu’à la dernière partie apprise.</p>`:""}</div>
-  ${f.revQte==="hz"?`<div class="field"><span class="lab">Révision des hizb déjà terminés</span><p class="hint">Un autre jour, l’élève révise aussi les hizb qu’il a finis, morceau par morceau.</p><div class="chips">${[["q2","½ hizb"],["q4","1 hizb"],["q8","1 juz"]].map(([v,l])=>chip("ancq",v,l,(f.revAncQ||"q4")===v)).join("")}</div><p class="hint" style="margin:10px 0 6px">Quels jours ?</p><div class="chips days">${WEEK.map(w=>chip("ajour",w,DOW_SHORT[w],(f.joursAnc||[]).includes(w))).join("")}</div></div>`:""}
+  <div class="field${fcls("rev")}"><span class="lab">Quantité à réviser par séance${ftag("rev")}</span><p class="hint">La révision reprend ce qui a été appris depuis le début du programme, puis recommence.</p><div class="chips">${revList(f).map(([v,l])=>chip("revq",v,l,f.revQte===v)).join("")}</div></div>
   <div class="field${fcls("rjours")}"><span class="lab">Jours de révision${ftag("rjours")}</span><p class="hint">Choisissez les jours où vous révisez. Ils peuvent être les mêmes que les jours d’apprentissage ou différents.</p><div class="chips days">${WEEK.map(w=>chip("rjour",w,DOW_SHORT[w],f.joursRev.includes(w))).join("")}</div></div>
   <div class="field"><label for="debut">Date de début</label><input id="debut" type="date" data-in="debut" value="${f.debut}"></div>
   <div class="estimate">${fin?`À ce rythme, vous terminerez ${isCourt(f)?"les petites sourates":"le Coran"} vers <strong>${fmtDate(fin,{month:"long",year:"numeric"})}</strong>.`:"Choisissez au moins un jour d’apprentissage."}</div>
@@ -667,8 +666,9 @@ function courtStartHTML(f){
 }
 const TODO_KEYS=[["start","le point de départ"],["qte","la quantité"],["jours","les jours d’apprentissage"],["rev","la révision"],["rjours","les jours de révision"]];
 const isNewForm=()=>!S.plan&&!S.editStudent&&S.tab!=="reprise";
-const fcls=k=>isNewForm()?((S.touched||{})[k]?" fdone":" ftodo"):"";
-const ftag=k=>isNewForm()?`<span class="ftag">${(S.touched||{})[k]?"✓ Choisi":"À choisir"}</span>`:"";
+const oldRev=k=>k==="rev"&&S.form&&S.form.revQte==="hz";
+const fcls=k=>oldRev(k)?" ftodo":isNewForm()?((S.touched||{})[k]?" fdone":" ftodo"):"";
+const ftag=k=>oldRev(k)?`<span class="ftag">À choisir</span>`:isNewForm()?`<span class="ftag">${(S.touched||{})[k]?"✓ Choisi":"À choisir"}</span>`:"";
 function touch(k,el){S.touched=S.touched||{};if(S.touched[k])return;S.touched[k]=true;if(el){const fd=el.closest(".field");if(fd){fd.classList.remove("ftodo");fd.classList.add("fdone");const tg=fd.querySelector(".ftag");if(tg)tg.textContent="✓ Choisi"}}}
 /* ====== Créneaux de récitation (version Supabase) ====== */
 const R={mine:[],all:[],taken:new Set()};
