@@ -233,6 +233,17 @@ input[type=text],input[type=number],input[type=date],select{width:100%;font:inhe
 @media (prefers-reduced-motion:no-preference){.notif .nb{animation:pulse 1.6s ease-in-out infinite}}
 .bkok{text-align:center;padding:10px 0}
 .bkcheck{width:54px;height:54px;border-radius:50%;background:var(--valid);color:#fff;display:grid;place-items:center;font-size:1.6rem;margin:0 auto}
+.pbtn{border:1.5px solid #3B6FD4;color:#3B6FD4;background:transparent;border-radius:999px;padding:6px 12px;font:inherit;font-size:.82rem;font-weight:500}
+.partask{border-top:1px dashed var(--line);margin-top:8px;padding-top:10px}
+.ayagrid{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.aysur{width:100%;font-size:.78rem;color:var(--muted);margin-top:4px}
+.ay{min-width:40px;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:6px 0;font:inherit;font-size:.85rem}
+.ay.in{background:var(--learn-soft);color:var(--learn);border-color:transparent}
+.ay.sel{background:var(--learn);color:#fff;border-color:var(--learn)}
+.chip.part{background:#3B6FD4;color:#fff;border-color:#3B6FD4}
+.vstat.part{color:#3B6FD4;background:rgba(59,111,212,.08);border-radius:10px;padding:8px 10px}
+.sug{border:1.5px solid var(--gold);background:var(--surface);border-radius:16px;padding:12px 14px;margin-bottom:14px}
+.sugt{margin:0;font-weight:600}
 .login input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .logout{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:3px 10px;font-size:.75rem;margin-left:6px;vertical-align:1px}
 .login{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 16px;margin-top:8px}
@@ -428,6 +439,9 @@ function hRange(h){return[QSTART[4*(h-1)],h===60?TOTAL_AYA:QSTART[4*h]]}
 function revItems(p,e){const out=[];(e.rev||[]).forEach((r,j)=>out.push({inf:rangeInfo(p,r),ay:toAyah(p,r),lab:e.revLab?e.revLab[j]:null}));(e.rv2||[]).forEach((r,j)=>out.push({inf:rangeInfo({mode:"aya"},r),ay:r,lab:e.rv2Lab[j]}));return out}
 const hasRev=e=>!!(e&&(e.rev||e.rv2));
 function vxOf(plan){if(!plan||S.local)return{};if(plan.id)return fv(plan,S.vals[plan.id]);if(plan===S.plan)return fv(plan,S.val);return{}}
+const qp=(p,k)=>{const c=(p.qteChanges||[]).filter(x=>x.from<=k).pop();return c?{...p,qte:c.q}:p};
+const canPart=p=>isAya(p)&&!isFin(p)&&!isCourt(p);
+const ayLab=i=>{const[s,n]=ayaPos(i);return `${SURAH_FR[s]}, aya ${n}`};
 function build(plan,until){
   const map=new Map(); let L=plan.deja||0, ptr=0, ptr2=0, P=0, P3=0, i=0, d=parseKey(plan.debut);const RL=isRep(plan)?repList(plan):[],nQ=RL.length*4;const VX=vxOf(plan);let lastL=null,lastLR=null,lastP=null,lastPR=null,lastLRedo=false,lastPRedo=false;const blk=(k,a,r)=>!!k&&!(VX[k]&&VX[k][a])&&!!((VX[k]&&VX[k]["x"+a])||r);
   while(d<=until&&i<6000){
@@ -449,7 +463,8 @@ function build(plan,until){
         const nD=Math.floor(P/4);if((plan.joursAncRep||plan.joursAnc||[]).includes(wd)&&nD>0){if(P3>=nD*4)P3=0;const k=parseQ(plan.revAncRepQ||plan.revAncQ||"q4").n;let q=P3;const end=Math.min(P3+k,nD*4);while(q<end){const h2=RL[Math.floor(q/4)];const qe=Math.min(end,(Math.floor(q/4)+1)*4);r2.push([qRange(h2,q%4)[0],qRange(h2,(qe-1)%4)[1]]);l2.push("Hizb repris");q=qe}P3=end>=nD*4?0:end}}
       if(r2.length){e.rv2=r2;e.rv2Lab=l2}
       if((plan.joursRep||[]).includes(wd)&&(P<nQ||blk(lastP,"p",lastPRedo))){const kk=key(d);if(blk(lastP,"p",lastPRedo)){e.rep=lastPR;e.redoP=lastP;lastPRedo=true}else{e.rep=qRange(RL[Math.floor(P/4)],P%4);P++;lastPRedo=false}lastP=kk;lastPR=e.rep}}
-    if(plan.joursApp.includes(wd)&&(L<tot(plan)||blk(lastL,"a",lastLRedo))){const kk=key(d);if(blk(lastL,"a",lastLRedo)){e.learn=lastLR;e.redoA=lastL;lastLRedo=true}else{lastLRedo=false;const b=Math.min(isAya(plan)?learnStep(plan,L):L+plan.qte,tot(plan));e.learn=[L,b];L=b}lastL=kk;lastLR=e.learn}
+    const pendPart=!!(lastL&&lastLR&&VX[lastL]&&VX[lastL].a&&VX[lastL].pa>lastLR[0]&&VX[lastL].pa<lastLR[1]);
+    if(plan.joursApp.includes(wd)&&(L<tot(plan)||blk(lastL,"a",lastLRedo)||pendPart)){const kk=key(d);if(blk(lastL,"a",lastLRedo)){e.learn=lastLR;e.redoA=lastL;lastLRedo=true}else if(pendPart){e.learn=[VX[lastL].pa,lastLR[1]];e.partOf=lastL;lastLRedo=false}else{lastLRedo=false;const b=Math.min(isAya(plan)?learnStep(qp(plan,kk),L):L+plan.qte,tot(plan));e.learn=[L,b];L=b}lastL=kk;lastLR=e.learn}
     if(e.learn||e.rev||e.rv2||e.rep)map.set(key(d),e);
     d=addDays(d,1);i++;
   }
@@ -475,7 +490,7 @@ function stats(plan,val){
   let lT=0,lD=0,lV=0,rT=0,rD=0,rV=0,pT=0,pD=0,pV=0,late=0,pend=0,valid=0;
   for(const[k,e] of map){
     const f=faits[k]||{}, v=val[k]||{}, past=k<key(t);
-    if(e.learn){lT++;if(f.a)lD++;if(v.a){lV++;valid+=ayLen(toAyah(plan,e.learn))}else if(v.xa){}else if(f.a)pend++;else if(past)late++}
+    if(e.learn){lT++;if(f.a)lD++;if(v.a){lV++;valid+=ayLen(toAyah(plan,v.pa>e.learn[0]&&v.pa<e.learn[1]?[e.learn[0],v.pa]:e.learn))}else if(v.xa){}else if(f.a)pend++;else if(past)late++}
     if(hasRev(e)){rT++;if(f.r)rD++;if(v.r)rV++;else if(v.xr&&!f.r){if(past)late++}else if(f.r)pend++;else if(past)late++}
     if(e.rep){pT++;if(f.p)pD++;if(v.p){pV++;valid+=e.rep[1]-e.rep[0]}else if(v.xp){}else if(f.p)pend++;else if(past)late++}
   }
@@ -579,11 +594,21 @@ function calHTML(p,ro,val,teacher){
   if(!e){const nx=[...build(p,addDays(sd,60)).keys()].find(k=>k>S.sel);const jn=fmtDate(sd,{weekday:"long"});
     out+=`<p class="empty">${S.sel<p.debut?"Le programme n’a pas encore commencé ce jour-là.":`Pas de séance ce ${jn} : ce n’est ni un jour d’apprentissage ni un jour de révision dans « Mon rythme ».`}${nx?` Prochaine séance : <strong>${fmtDate(parseKey(nx),{weekday:"long",day:"numeric",month:"long"})}</strong>.`:""}</p>`}
   else{
-    if(e.learn){const ti=rangeInfo(p,e.learn);out+=taskHTML("l",e.redoA?"À apprendre (à refaire)":"À apprendre",ti.what,ti.surah,f.a,ro,vv.a,teacher,msg("apprentissage",ti.what,ti.surah),vv.xa?redoTxt(p,S.sel,vv,"a"):"")}
+    if(e.learn){const ti=rangeInfo(p,e.learn);out+=taskHTML("l",e.redoA?"À apprendre (à refaire)":e.partOf?"À apprendre (suite de la séance du "+fmtDate(parseKey(e.partOf),{weekday:"long",day:"numeric",month:"long"})+")":"À apprendre",ti.what,ti.surah,f.a,ro,vv.a,teacher,msg("apprentissage",ti.what,ti.surah),vv.xa?redoTxt(p,S.sel,vv,"a"):(vv.a&&vv.pa>e.learn[0]&&vv.pa<e.learn[1])?partTxt(p,S.sel,vv,e):"")}
     if(e.rep){const ti=rangeInfo({mode:"aya"},e.rep);out+=taskHTML("p",e.redoP?"À reprendre (à refaire)":"À reprendre (¼ hizb)",ti.what,ti.surah,f.p,ro,vv.p,teacher,msg("reprise",ti.what,ti.surah),vv.xp?redoTxt(p,S.sel,vv,"p"):"")}
     if(hasRev(e)){const ts=revItems(p,e);out+=taskHTML("r","À réviser",ts.map(x=>(x.lab?`<span class="rlab">${x.lab}</span> `:"")+x.inf.what).join("<br>"),ts.map(x=>x.inf.surah).join("<span>·</span>"),f.r,ro,vv.r,teacher,msg("révision",ts.map(x=>x.inf.what).join(" puis "),ts.map(x=>x.inf.surah).join(" · ")),vv.xr?redoTxt(p,S.sel,vv,"r"):"")}
   }
   return out+`</section>`;
+}
+function partTxt(p,k,vv,e){
+  let nx="";for(const[k2,e2] of build(p,addDays(parseKey(k),60))){if(k2>k&&e2.partOf===k){nx=k2;break}}
+  return `<div class="vstat part">◐ <strong>Validé en partie</strong> jusqu’à ${esc(ayLab(vv.pa-1))}. La suite (${esc(ayLab(vv.pa))} → ${esc(ayLab(e.learn[1]-1))}) est reportée${nx?` au <strong>${fmtDate(parseKey(nx),{weekday:"long",day:"numeric",month:"long"})}</strong>`:" à la prochaine séance"}.</div>`;
+}
+function partAskHTML(id,s,e){
+  const[a,b]=e.learn,sel=S.partSel;let h=`<div class="partask"><p class="mini" style="margin:0 0 6px">Jusqu’à quelle aya l’élève a-t-il bien récité ?</p><div class="ayagrid">`;let lastS=-1;
+  for(let i=a;i<b;i++){const[sx,n]=ayaPos(i);if(sx!==lastS){h+=`<span class="aysur">${SURAH_FR[sx]}</span>`;lastS=sx}h+=`<button class="ay${sel!=null&&i<sel?" in":i===sel?" sel":""}" data-act="partPick" data-v="${i}">${n}</button>`}
+  h+=`</div><div class="chips" style="margin-top:8px">${sel!=null?`<button class="chip part" data-act="partOk" data-v="${esc(id)}">${sel+1>=b?"Toute la séance est validée":"Valider jusqu’à l’aya "+ayaPos(sel)[1]}</button>`:""}<button class="chip" data-act="partNo">Annuler</button></div></div>`;
+  return h;
 }
 function redoTxt(p,k,vv,a){
   let nx="";if(a!=="r"){for(const[k2,e] of build(p,addDays(parseKey(k),60))){if(k2>k&&((a==="a"&&e.redoA===k)||(a==="p"&&e.redoP===k))){nx=k2;break}}}
@@ -776,16 +801,29 @@ function dejaAyaHTML(f){
   <div style="display:flex;gap:8px"><label style="flex:2;min-width:0"><span class="mini">Sourate</span><select data-in="dejaS" style="width:100%">${opts}</select></label>
   <label style="flex:1;min-width:0"><span class="mini">Aya n° (1 à ${AYA_COUNT[s]})</span><input type="number" data-in="dejaA" min="1" max="${AYA_COUNT[s]}" value="${a}"></label></div>${previewHTML(f)}</div>`;
 }
+const LOWER={q1:"p2",p4:"p2",p2:"p1"};
+function sugHTML(list){
+  const t=key(today0());let out="";
+  for(const s of list){if(!canPart(s))continue;const val=fv(s,S.vals[s.id]);const done=[];
+    for(const[k,e] of build(s,today0())){if(!e.learn||k>t)continue;const v=val[k]||{};if(v.a||v.xa)done.push({k,bad:!!v.xa||(v.pa>e.learn[0]&&v.pa<e.learn[1])})}
+    const last=done.slice(-3);if(last.length<3||last.filter(x=>x.bad).length<2)continue;
+    const cq=qp(s,t).qte,nq=LOWER[cq];if(!nq)continue;const id=s.id+"-"+last[last.length-1].k;let dis=false;try{dis=!!localStorage.getItem("hifz-sug-"+id)}catch(e){}if(dis)continue;
+    const nx=[...build(s,addDays(today0(),30)).entries()].find(([k,e])=>k>t&&e.learn);const from=nx?nx[0]:key(addDays(today0(),1));
+    const lab=x=>(QTE_A.find(y=>y[0]===x)||[,x])[1];
+    out+=`<section class="sug"><p class="sugt">💡 ${esc(s.nom||"Un élève")} termine rarement ${lab(cq)==="¼ hizb"?"son quart de hizb":"sa séance ("+lab(cq)+")"}</p><p class="hint" style="margin:4px 0 8px">Pas terminé ${last.filter(x=>x.bad).length} fois sur ses 3 dernières séances. Passer à <strong>${lab(nq)} par séance</strong> ?</p><div class="chips"><button class="chip on" data-act="sugOk" data-v="${esc(s.id)}|${nq}|${from}">Passer à ${lab(nq)}</button><button class="chip" data-act="sugNo" data-v="${esc(id)}">Garder ${lab(cq)}</button></div></section>`;
+  }
+  return out;
+}
 function pendingHTML(list){
   const items=[];const tk=key(addDays(today0(),60));
   for(const s of list){const val=fv(s,S.vals[s.id]),fa=s.faits||{};
     for(const[k,e] of build(s,parseKey(tk))){const f=fa[k]||{},v=val[k]||{};
-      if(e.learn&&f.a&&!v.a&&!v.xa)items.push({s,k,a:"a",lab:"Apprentissage",cls:"l",what:rangeInfo(s,e.learn).what});
+      if(e.learn&&f.a&&!v.a&&!v.xa)items.push({s,k,a:"a",e,lab:e.partOf?"Apprentissage (suite)":"Apprentissage",cls:"l",what:rangeInfo(s,e.learn).what});
       if(e.rep&&f.p&&!v.p&&!v.xp)items.push({s,k,a:"p",lab:"Reprise",cls:"p",what:rangeInfo({mode:"aya"},e.rep).what});
       if(hasRev(e)&&f.r&&!v.r)items.push({s,k,a:"r",lab:"Révision",cls:"r",what:revItems(s,e).map(x=>x.inf.what).join(" puis ")});}}
   items.sort((x,y)=>x.k<y.k?-1:x.k>y.k?1:0);
   if(!items.length)return `<section class="pending"><h3>À valider</h3><p class="hint" style="margin:0">Aucune récitation en attente.</p></section>`;
-  return `<section class="pending"><h3>À valider <span class="cnt">${items.length}</span></h3>`+items.slice(0,40).map(it=>`<div class="pitem"><div class="pi-body"><div class="pi-top"><strong>${esc(it.s.nom||"Élève")}</strong> · ${fmtDate(parseKey(it.k),{weekday:"short",day:"numeric",month:"short"})}</div><div><span class="nk ${it.cls}">${it.lab}</span> ${it.what}</div></div><div class="pi-btns"><button class="vbtn" data-act="valq" data-v="${esc(it.s.id)}|${it.k}|${it.a}">Valider</button><button class="rbtn" data-act="refaire" data-v="${esc(it.s.id)}|${it.k}|${it.a}">À refaire</button></div></div>${S.redoAsk===`${it.s.id}|${it.k}|${it.a}`?redoAskHTML(`${it.s.id}|${it.k}|${it.a}`):""}`).join("")+`</section>`;
+  return `<section class="pending"><h3>À valider <span class="cnt">${items.length}</span></h3>`+items.slice(0,40).map(it=>`<div class="pitem"><div class="pi-body"><div class="pi-top"><strong>${esc(it.s.nom||"Élève")}</strong> · ${fmtDate(parseKey(it.k),{weekday:"short",day:"numeric",month:"short"})}</div><div><span class="nk ${it.cls}">${it.lab}</span> ${it.what}</div></div><div class="pi-btns"><button class="vbtn" data-act="valq" data-v="${esc(it.s.id)}|${it.k}|${it.a}">Valider</button>${it.a==="a"&&canPart(it.s)&&it.e.learn[1]-it.e.learn[0]>1?`<button class="pbtn" data-act="partOpen" data-v="${esc(it.s.id)}|${it.k}">En partie</button>`:""}<button class="rbtn" data-act="refaire" data-v="${esc(it.s.id)}|${it.k}|${it.a}">À refaire</button></div></div>${S.redoAsk===`${it.s.id}|${it.k}|${it.a}`?redoAskHTML(`${it.s.id}|${it.k}|${it.a}`):""}${S.partAsk===`${it.s.id}|${it.k}`?partAskHTML(`${it.s.id}|${it.k}`,it.s,it.e):""}`).join("")+`</section>`;
 }
 function studentsList(){
   const list=S.students.filter(s=>s.joursApp).sort((a,b)=>(a.nom||"").localeCompare(b.nom||"","fr"));
@@ -794,6 +832,7 @@ function studentsList(){
   let h=cfgOpen?`<section class="form" style="margin-bottom:16px"><div class="field"><label for="cfgW">Votre numéro WhatsApp de professeur</label><p class="hint">Le numéro sur lequel les élèves vous préviennent. À remplir une seule fois, par vous. Format international, sans + ni espaces. Exemple pour la France : 33612345678.</p><input id="cfgW" type="text" inputmode="tel" data-in="cfgW" value="${esc(cd.whatsapp)}" placeholder="33612345678"></div>
   <div class="field"><label for="cfgZ">Votre lien Zoom de professeur</label><p class="hint">Le lien de votre réunion Zoom, où les élèves viennent réciter.</p><input id="cfgZ" type="text" inputmode="url" data-in="cfgZ" value="${esc(cd.zoom)}" placeholder="https://zoom.us/j/…"></div>
   <button class="primary" data-act="savecfg">${S.cfgSaved?"Enregistré ✓":"Enregistrer"}</button>${S.cfgSaved?`<p class="hint" style="margin:10px 0 0;color:var(--learn);font-weight:500">C’est enregistré. Les élèves verront vos boutons WhatsApp et Zoom.</p>`:""}<p class="hint" style="margin:10px 0 0">Les élèves n’ont rien à remplir : ils verront les boutons « Prévenir le professeur sur WhatsApp » et « Rejoindre la récitation (Zoom) » après avoir coché une séance.</p></section>`:`<button class="cfgline" data-act="cfgopen"><span>Réglages WhatsApp / Zoom</span><span>${S.cfg.whatsapp?"WhatsApp ✓":"WhatsApp —"} · ${S.cfg.zoom?"Zoom ✓":"Zoom —"} ✎</span></button>`;
+  h+=sugHTML(list);
   h+=slotsAdminHTML();
   h+=pendingHTML(list);
   h+=`<p class="note">Partagez cette page avec vos élèves en accès Contributeur : chacun crée son programme, et leur progression apparaît ici.</p>`;
@@ -824,6 +863,15 @@ app.addEventListener("click",async ev=>{
     case"mushaf":openMushaf(v);return;
     case"refaire":S.redoAsk=v;S.redoNote="";break;
     case"refaireNo":S.redoAsk=null;break;
+    case"partOpen":S.partAsk=v;S.partSel=null;S.redoAsk=null;break;
+    case"partPick":S.partSel=Number(v);break;
+    case"partNo":S.partAsk=null;S.partSel=null;break;
+    case"partOk":{const[sid,k]=v.split("|");if(!S.db||S.partSel==null)return;const s=S.students.find(x=>x.id===sid);const e=s&&build(s,parseKey(k)).get(k);if(!e||!e.learn)return;
+      const all={...(S.vals[sid]||{})};const cur={...(all[k]||{})};cur.a=true;cur.xa=false;const pa=S.partSel+1;if(pa<e.learn[1])cur.pa=pa;else delete cur.pa;cur.at=Date.now();all[k]=cur;S.vals[sid]=all;S.partAsk=null;S.partSel=null;render();
+      writeChain=writeChain.then(()=>S.db.doc("validations/"+sid).set(all)).catch(()=>{S.note="La validation n’a pas pu être enregistrée. Réessayez.";render()});return}
+    case"sugOk":{const[sid,q,k]=v.split("|");const s=S.students.find(x=>x.id===sid);if(!s||!S.db)return;const ch=[...(s.qteChanges||[]),{from:k,q}];s.qteChanges=ch;S.note=`Rythme de ${s.nom||"l’élève"} modifié : ${(QTE_A.find(x=>x[0]===q)||[,q])[1]} par séance, à partir de sa prochaine séance.`;render();
+      writeChain=writeChain.then(()=>S.db.doc("eleves/"+sid).update({qteChanges:ch})).catch(()=>{S.note="Le rythme n’a pas pu être modifié.";render()});return}
+    case"sugNo":{try{localStorage.setItem("hifz-sug-"+v,"1")}catch(e){}break}
     case"refaireOk":{const[sid,k,a]=v.split("|");if(!S.db)return;S.redoAsk=null;const all={...(S.vals[sid]||{})};const cur={...(all[k]||{})};cur[a]=false;cur["x"+a]=true;cur.note=(S.redoNote||"").trim();cur.at=Date.now();all[k]=cur;S.vals[sid]=all;
       let stu=null;if(a==="r"){stu=S.students.find(x=>x.id===sid);if(stu){const fa={...(stu.faits||{})};fa[k]={...(fa[k]||{}),r:false};stu.faits=fa}}
       render();writeChain=writeChain.then(()=>S.db.doc("validations/"+sid).set(all)).then(()=>stu?S.db.doc("eleves/"+sid).update({faits:stu.faits}):null).catch(()=>{S.note="« À refaire » n’a pas pu être enregistré. Réessayez.";render()});return}
